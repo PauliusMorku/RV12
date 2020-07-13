@@ -44,12 +44,12 @@ LOG = log/$(TOP).log
 
 
 SIM_OPTS= -debugdb +notimingchecks +acc
-INIT_FILE="$(TST_SRC_DIR)/rv32ui-p-ori.hex"
+INIT_FILE="$(TST_SRC_DIR)/rv32ui-p-sb.hex"
 DCACHE_SIZE=0
 ICACHE_SIZE=0
 MEM_LATENCY=0
 WRITEBUFFER_SIZE=0
-XLEN=64
+XLEN=32
 MULT_LATENCY=0
 HAS_U=0
 HAS_S=0
