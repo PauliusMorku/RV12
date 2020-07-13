@@ -70,7 +70,7 @@ module riscv_pmpchk #(
       QWORD  : size2bytes = 16;
       default: begin
                    size2bytes = -1;
-                   $error("Illegal biu_size_t");
+                   //$error("Illegal biu_size_t");
                end
     endcase
   endfunction: size2bytes
