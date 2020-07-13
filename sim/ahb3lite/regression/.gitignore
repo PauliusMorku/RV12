@@ -1,0 +1,5 @@
+/run/msim/
+/run_test/work/
+/run_test/log/
+/run_test/*.dbg
+/run_test/*.wlf
