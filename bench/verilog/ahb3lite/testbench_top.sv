@@ -76,6 +76,7 @@ parameter PMA_CNT          = 4;
 //
 import riscv_pma_pkg::*;
 import ahb3lite_pkg::*;
+import riscv_state_pkg::*;
 
 localparam MULLAT = MULT_LATENCY > 4 ? 4 : MULT_LATENCY;
 
