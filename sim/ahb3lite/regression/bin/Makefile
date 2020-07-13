@@ -59,7 +59,7 @@ TST_SRC_DIR=$(ROOT_DIR)/../bench/tests/regression
 #REGRESSION_MEM_LATENCY      = 0 1 3 8
 REGRESSION_MEM_LATENCY     = 0 1 8 
 #REGRESSION_XLEN             = 32 64
-REGRESSION_XLEN             = 64
+REGRESSION_XLEN             = 32
 #REGRESSION_WRITEBUFFER_SIZE = 0 2 8
 REGRESSION_WRITEBUFFER_SIZE = 0 
 #REGRESSION_ICACHE_SIZE = 0 4 
@@ -75,17 +75,18 @@ REGRESSION_MULT_LATENCY = 3 2 1 0
 # Tests
 #
 ##########################################################################
-XLEN    = 64
+XLEN    = 32
 HAS_RVC = 0
-HAS_U   = 0
-HAS_S   = 0
-HAS_H   = 0
+HAS_U   = 1
+HAS_S   = 1
+HAS_H   = 1
 HAS_RVA = 0
 HAS_FPU = 0
 HAS_MMU = 0
 HAS_RVM = 0
 HAS_DIV = $(HAS_RVM)
 CORES   = 1
+
 U_INT_TESTS =	simple					\
 		add addi 						\
 		and andi 						\
@@ -124,39 +125,52 @@ U_MUL_TESTS  =	mul mulh mulhu mulhsu					\
 U_DIV_TESTS  =	div divu rem remu					\
 	 $(if $(filter 64,$(XLEN)), divw divuw remw remuw )
 
-#machine mode tests
-M_TESTS      =	breakpoint csr illegal ma_addr ma_fetch mcsr sbreak	\
-		scall							\
+# Machine Mode Tests
+M_TESTS      = csr illegal mcsr sbreak scall \
+	#breakpoint ma_addr ma_fetch \
 	$(if $(filter 32,$(XLEN)), shamt)
 
-#supervisor mode tests
-S_TESTS      =	csr dirty illegal ma_fetch sbreak scall wfi
+# Supervisor Mode Tests
+S_TESTS      =	csr sbreak scall wfi #\
+	#dirty illegal ma_fetch
+
+# User Mode Integer Tests
+uitst_lst = $(foreach t, $(U_INT_TESTS),rv$(XLEN)ui-p-$t)
+
+ifneq ($(HAS_RVA),0)
+	uitst_lst += $(foreach t, $(U_AMO_TESTS),rv$(XLEN)ua-p-$t)
+endif
+ifneq ($(HAS_RVM),0)
+	uitst_lst += $(foreach t, $(U_MUL_TESTS),rv$(XLEN)um-p-$t)
+endif
+ifneq ($(HAS_DIV),0)
+	uitst_lst += $(foreach t, $(U_DIV_TESTS),rv$(XLEN)um-p-$t)
+endif
+uitests = $(uitst_lst)
 
 
-#User Mode Integer Tests
-uitst_lst  =                      $(foreach t, $(U_INT_TESTS),rv$(XLEN)ui-p-$t)
-#uitst_lst += $(if $(HAS_RVA) > 0, $(foreach t, $(U_AMO_TESTS),rv$(XLEN)ua-p-$t))
-uitst_lst += $(if $(HAS_RVM) > 0, $(foreach t, $(U_MUL_TESTS),rv$(XLEN)um-p-$t))
-uitst_lst += $(if $(HAS_DIV) > 0, $(foreach t, $(U_DIV_TESTS),rv$(XLEN)um-p-$t))
-uitests    = $(if $(HAS_U)   > 0, $(uitst_lst))
+# User Mode RVC Tests
+ifneq ($(HAS_RVC),0)
+	uctst_lst = $(foreach t, $(U_RVC_TESTS),rv$(XLEN)uc-p-$t)
+endif
+uctests = $(uctst_lst)
 
-#User Mode RVC Tests
-uctst_lst = $(if $(HAS_RVC), $(foreach t, $(U_RVC_TESTS),rv$(XLEN)uc-p-$t))
-uctests   = $(if $(HAS_U) > 0, $(uctst_lst))
+# Supervisor Mode Tests
+sitst_lst = $(foreach t, $(S_TESTS),rv$(XLEN)si-p-$t)
+ifneq ($(HAS_S),0)
+	sitests = $(sitst_lst)
+endif
 
-#Supervisor Mode Tests
-sitst_lst = $(S_TESTS)
-sitests   = $(if $(HAS_S) > 0, $(foreach t, $(sitst_lst),rv$(XLEN)si-p-$t))
-
-#Machine Mode Tests
-mitst_lst = $(M_TESTS)
-mitests   = $(foreach t, $(mitst_lst),rv$(XLEN)mi-p-$t)
+# Machine Mode Tests
+mitst_lst = $(foreach t, $(M_TESTS),rv$(XLEN)mi-p-$t)
+mitests   = $(mitst_lst)
 
 
-#All tests
+# All tests
 #tests = $(uitests) $(sitests) $(mitests)
-tests = $(uitests) $(mitests)
-#tests = $(sitests)
+tests = $(mitests) $(uctests) $(uitests) $(sitests)
+#tests = $(mitests)
+
 
 # make | grep "# \* PASSED\|# \* FAILED\|make msim LOG=." > run_result.txt
 
