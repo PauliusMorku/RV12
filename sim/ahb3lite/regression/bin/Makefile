@@ -41,7 +41,7 @@
 all: regression
 
 SIMULATORS = ncsim vcs msim riviera
-SIM        = riviera
+SIM        = msim
 SIMWAVES   = $(addsuffix _waves, $(SIMULATORS))
 
 MS     = -s
@@ -57,13 +57,15 @@ TST_SRC_DIR=$(ROOT_DIR)/../bench/tests/regression
 ##########################################################################
 #REGRESSION_MEM_LATENCY      = 0 1 2 3 4 5 7 8 15
 #REGRESSION_MEM_LATENCY      = 0 1 3 8
-REGRESSION_MEM_LATENCY     = 0 1 3 8 
+REGRESSION_MEM_LATENCY     = 0 1 8 
 #REGRESSION_XLEN             = 32 64
 REGRESSION_XLEN             = 64
 #REGRESSION_WRITEBUFFER_SIZE = 0 2 8
 REGRESSION_WRITEBUFFER_SIZE = 0 
-REGRESSION_ICACHE_SIZE = 0 4
-REGRESSION_DCACHE_SIZE = 0 4
+#REGRESSION_ICACHE_SIZE = 0 4 
+REGRESSION_ICACHE_SIZE = 0
+#REGRESSION_DCACHE_SIZE = 0 4
+REGRESSION_DCACHE_SIZE = 0 
 REGRESSION_MULT_LATENCY = 3 2 1 0
 #REGRESSION_MULT_LATENCY = 2
 
@@ -75,36 +77,36 @@ REGRESSION_MULT_LATENCY = 3 2 1 0
 ##########################################################################
 XLEN    = 64
 HAS_RVC = 0
-HAS_U   = 1 
-HAS_S   = 
-HAS_H   = 
-HAS_RVA = 
-HAS_FPU =
-HAS_MMU =
-HAS_RVM = 1
+HAS_U   = 0
+HAS_S   = 0
+HAS_H   = 0
+HAS_RVA = 0
+HAS_FPU = 0
+HAS_MMU = 0
+HAS_RVM = 0
 HAS_DIV = $(HAS_RVM)
 CORES   = 1
-U_INT_TESTS =	simple							\
+U_INT_TESTS =	simple					\
 		add addi 						\
 		and andi 						\
 		auipc							\
-		beq bge bgeu blt bltu bne				\
+		beq bge bgeu blt bltu bne		\
 		fence_i							\
 		jal jalr						\
-		lb lbu lh lhu lw 					\
-		lui							\
+		lb lbu lh lhu lw 				\
+		lui								\
 		or ori							\
 		sb sh sw						\
 		sll slli						\
-		slt slti sltiu sltu					\
+		slt slti sltiu sltu				\
 		sra srai						\
 		srl srli						\
-		sub							\
+		sub								\
 		xor xori						\
-	$(if $(filter 64, $(XLEN)),					\
+	$(if $(filter 64, $(XLEN)),			\
  		addiw addw						\
 		lwu ld							\
-		sd							\
+		sd								\
 		sllw slliw						\
 		sllw slliw						\
 		sltu sltiu						\
@@ -154,11 +156,14 @@ mitests   = $(foreach t, $(mitst_lst),rv$(XLEN)mi-p-$t)
 #All tests
 #tests = $(uitests) $(sitests) $(mitests)
 tests = $(uitests) $(mitests)
+#tests = $(sitests)
+
+# make | grep "# \* PASSED\|# \* FAILED\|make msim LOG=." > run_result.txt
 
 
 ##########################################################################
 #
-### Functions
+# Functions
 #
 ############################################################################
 add_regression    = $(foreach p,$(REGRESSION_$(1)), $(addprefix $(1)$(p)@, $(2)))
@@ -170,9 +175,9 @@ logs = $(call add_regression,DCACHE_SIZE,				\
        $(call add_regression,WRITEBUFFER_SIZE,				\
        $(call add_regression,XLEN,					\
        $(foreach t,$(tests),						\
-         $(call add_regression_if,$t,$(U_MUL_TESTS),MULT_LATENCY,	\
-         $t.log								\
-         )								\
+       $(call add_regression_if,$t,$(U_MUL_TESTS),MULT_LATENCY,	\
+       $t.log							\
+       )								\
        )								\
        )								\
        )								\
@@ -184,17 +189,21 @@ logs = $(call add_regression,DCACHE_SIZE,				\
 regression: $(logs)
 
 %.log:
-	$(MAKE) $(SIM) LOG=./log/$(@F)						\
-	  PARAMS="DCACHE_SIZE=$(subst DCACHE_SIZE,,$(word 1,$(subst @, ,$*)))		\
-	          ICACHE_SIZE=$(subst ICACHE_SIZE,,$(word 2,$(subst @, ,$*)))		\
-	          MEM_LATENCY=$(subst MEM_LATENCY,,$(word 3,$(subst @, ,$*))) 		\
-	          WRITEBUFFER_SIZE=$(subst WRITEBUFFER_SIZE,,$(word 4,$(subst @, ,$*)))	\
-	          XLEN=$(subst XLEN,,$(word 5,$(subst @, ,$*)))				\
-	          MULT_LATENCY=$(subst MULT_LATENCY,,$(word 6,$(subst @, ,$*)))		\
-	          HAS_U=$(HAS_U) HAS_S=$(HAS_S) HAS_H=$(HAS_H)				\
-		  HAS_RVA=$(HAS_RVA) HAS_RVC=$(HAS_RVC) HAS_RVM=$(HAS_RVM)		\
-	          TECHNOLOGY=$(TECHNOLOGY)						\
-	          INIT_FILE=\"$(TST_SRC_DIR)/$(lastword $(subst @, ,$*)).hex\" "
+	$(MAKE) $(SIM) LOG=./log/$(@F) \
+	  PARAMS="DCACHE_SIZE=$(subst DCACHE_SIZE,,$(word 1,$(subst @, ,$*))) \
+	          ICACHE_SIZE=$(subst ICACHE_SIZE,,$(word 2,$(subst @, ,$*))) \
+	          MEM_LATENCY=$(subst MEM_LATENCY,,$(word 3,$(subst @, ,$*))) \
+	          WRITEBUFFER_SIZE=$(subst WRITEBUFFER_SIZE,,$(word 4,$(subst @, ,$*))) \
+	          XLEN=$(subst XLEN,,$(word 5,$(subst @, ,$*))) \
+	          MULT_LATENCY=$(subst MULT_LATENCY,,$(word 6,$(subst @, ,$*))) \
+	          HAS_U=$(HAS_U) \
+	          HAS_S=$(HAS_S) \
+	          HAS_H=$(HAS_H) \
+	          HAS_RVA=$(HAS_RVA) \
+	          HAS_RVC=$(HAS_RVC) \
+	          HAS_RVM=$(HAS_RVM) \
+	          TECHNOLOGY=$(TECHNOLOGY) \
+	          INIT_FILE=\"$(TST_SRC_DIR)/$(lastword $(subst @, ,$*)).hex\""
 
 
 ##########################################################################
