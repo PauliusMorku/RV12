@@ -165,10 +165,6 @@ module riscv_core #(
   logic [               1:0] if_bp_predict,
                              id_bp_predict;
 
-//  logic [BP_GLOBAL_BITS-1:0] bu_bp_history;
-//  logic                      bu_bp_btaken,
-//                             bu_bp_update;
-
 
   //Exceptions
   logic [EXCEPTION_SIZE-1:0] if_exception,
@@ -212,7 +208,7 @@ module riscv_core #(
                              st_tsr;
   logic [XLEN          -1:0] st_mcounteren,
                              st_scounteren;
-  logic                      st_interrupt;
+  //logic                      st_interrupt;
   logic [              11:0] ex_csr_reg;
   logic [XLEN          -1:0] ex_csr_wval,
                              st_csr_rval;
@@ -276,36 +272,37 @@ module riscv_core #(
     .PARCEL_SIZE    ( PARCEL_SIZE    ),
     .HAS_BPU        ( HAS_BPU        ) )
   if_unit (
-    .rstn                 ( rstn                  ), // in  //Reset
-    .clk                  ( clk                   ), // in  //Clock
-    .id_stall             ( id_stall              ), // in 
+    .rstn                 ( rstn                  ), // in  PORT //Reset
+    .clk                  ( clk                   ), // in  PORT //Clock
+    .id_stall             ( id_stall              ), // in  IDIFST
 
-    .if_stall_nxt_pc      ( if_stall_nxt_pc       ), // in 
-    .if_parcel            ( if_parcel             ), // in
-    .if_parcel_pc         ( if_parcel_pc          ), // in
-    .if_parcel_valid      ( if_parcel_valid       ), // in
-    .if_parcel_misaligned ( if_parcel_misaligned  ), // in 
-    .if_parcel_page_fault ( if_parcel_page_fault  ), // in
+    .if_stall_nxt_pc      ( if_stall_nxt_pc       ), // in  PORT 
+    .if_parcel            ( if_parcel             ), // in  PORT 
+    .if_parcel_pc         ( if_parcel_pc          ), // in  PORT
+    .if_parcel_valid      ( if_parcel_valid       ), // in  PORT
+    .if_parcel_misaligned ( if_parcel_misaligned  ), // in  PORT
+    .if_parcel_page_fault ( if_parcel_page_fault  ), // in  PORT
 
-    .if_instr             ( if_instr              ), // out //Instruction out
-    .if_bubble            ( if_bubble             ), // out //Insert bubble in the pipe (NOP instruction)
-    .if_exception         ( if_exception          ), // out //Exceptions
+
+    .if_instr             ( if_instr              ), // out IFID //Instruction out
+    .if_bubble            ( if_bubble             ), // out IFID //Insert bubble in the pipe (NOP instruction)
+    .if_exception         ( if_exception          ), // out IFID //Exceptions
 
 
     .bp_bp_predict        ( 2'b00                 ), // in  //Branch Prediction bits
-    .if_bp_predict        ( if_bp_predict         ), // out //push down the pipe
+    .if_bp_predict        ( if_bp_predict         ), // out IFID //push down the pipe
 
-    .bu_flush             ( bu_flush              ), // in  //flush pipe & load new program counter
-    .st_flush             ( st_flush              ), // in 
-    .du_flush             ( du_flush              ), // in  //flush pipe after debug exit
+    .bu_flush             ( bu_flush              ), // in  EXIFIDST //flush pipe & load new program counter
+    .st_flush             ( st_flush              ), // in  STIFIDEX
+    .du_flush             ( du_flush              ), // in  DBG //flush pipe after debug exit
 
-    .bu_nxt_pc            ( bu_nxt_pc             ), // in  //Branch Unit Next Program Counter
-    .st_nxt_pc            ( st_nxt_pc             ), // in  //State Next Program Counter
+    .bu_nxt_pc            ( bu_nxt_pc             ), // in  EXIFIDST //Branch Unit Next Program Counter
+    .st_nxt_pc            ( st_nxt_pc             ), // in  STIFID //State Next Program Counter
 
-    .if_nxt_pc            ( if_nxt_pc             ), // out //next Program Counter
-    .if_stall             ( if_stall              ), // out //stall instruction fetch BIU (cache/bus-interface)
-    .if_flush             ( if_flush              ), // out //flush instruction fetch BIU (cache/bus-interface)
-    .if_pc                ( if_pc                 )  // out //Program Counter
+    .if_nxt_pc            ( if_nxt_pc             ), // out PORT //next Program Counter
+    .if_stall             ( if_stall              ), // out PORT //stall instruction fetch BIU (cache/bus-interface)
+    .if_flush             ( if_flush              ), // out PORT //flush instruction fetch BIU (cache/bus-interface)
+    .if_pc                ( if_pc                 )  // out IFID //Program Counter
   );
 
   /*
@@ -323,74 +320,74 @@ module riscv_core #(
     .HAS_RVM        ( HAS_RVM        ),
     .MULT_LATENCY   ( MULT_LATENCY   ) )
   id_unit (
-    .rstn           ( rstn          ), // in  
-    .clk            ( clk           ), // in  
+    .rstn           ( rstn          ), // in  PORT  
+    .clk            ( clk           ), // in  PORT  
 
-    .id_stall       ( id_stall      ), // out 
-    .ex_stall       ( ex_stall      ), // in  
-    .du_stall       ( du_stall      ), // in  
+    .id_stall       ( id_stall      ), // out IDIFST
+    .ex_stall       ( ex_stall      ), // in  EXID
+    .du_stall       ( du_stall      ), // in  DBG
 
-    .bu_flush       ( bu_flush      ), // in  
-    .st_flush       ( st_flush      ), // in  
-    .du_flush       ( du_flush      ), // in  
+    .bu_flush       ( bu_flush      ), // in  EXIFIDST 
+    .st_flush       ( st_flush      ), // in  STIFIDEX
+    .du_flush       ( du_flush      ), // in  DBG  
 
-    .bu_nxt_pc      ( bu_nxt_pc     ), // in  
-    .st_nxt_pc      ( st_nxt_pc     ), // in  
+    .bu_nxt_pc      ( bu_nxt_pc     ), // in  EXIFIDST
+    .st_nxt_pc      ( st_nxt_pc     ), // in  STIFID
 
     //Program counter
-    .if_pc          ( if_pc         ), // in  
-    .id_pc          ( id_pc         ), // out 
-    .if_bp_predict  ( if_bp_predict ), // in  
-    .id_bp_predict  ( id_bp_predict ), // out 
+    .if_pc          ( if_pc         ), // in  IFID
+    .id_pc          ( id_pc         ), // out IDEXST
+    .if_bp_predict  ( if_bp_predict ), // in  IFID
+    .id_bp_predict  ( id_bp_predict ), // out IDEX
 
     //Instruction
-    .if_instr       ( if_instr      ), // in  
-    .if_bubble      ( if_bubble     ), // in  
-    .id_instr       ( id_instr      ), // out 
-    .id_bubble      ( id_bubble     ), // out 
-    .ex_instr       ( ex_instr      ), // in  
-    .ex_bubble      ( ex_bubble     ), // in  
-    .mem_instr      ( mem_instr     ), // in  
-    .mem_bubble     ( mem_bubble    ), // in  
-    .wb_instr       ( wb_instr      ), // in  
-    .wb_bubble      ( wb_bubble     ), // in  
+    .if_instr       ( if_instr      ), // in  IFID 
+    .if_bubble      ( if_bubble     ), // in  IFID 
+    .id_instr       ( id_instr      ), // out IDEXST
+    .id_bubble      ( id_bubble     ), // out IDEXST
+    .ex_instr       ( ex_instr      ), // in  EXIDME
+    .ex_bubble      ( ex_bubble     ), // in  EXIDME
+    .mem_instr      ( mem_instr     ), // in  MEIDWB
+    .mem_bubble     ( mem_bubble    ), // in  MEIDWB
+    .wb_instr       ( wb_instr      ), // in  WBIDST
+    .wb_bubble      ( wb_bubble     ), // in  WBIDST
 
     //Exceptions
-    .if_exception   ( if_exception  ), // in  
-    .ex_exception   ( ex_exception  ), // in  
-    .mem_exception  ( mem_exception ), // in  
-    .wb_exception   ( wb_exception  ), // in  
-    .id_exception   ( id_exception  ), // out 
+    .if_exception   ( if_exception  ), // in  IFID
+    .ex_exception   ( ex_exception  ), // in  EXIDME
+    .mem_exception  ( mem_exception ), // in  MEIDEXWB
+    .wb_exception   ( wb_exception  ), // in  WBIDEXME
+    .id_exception   ( id_exception  ), // out IDEX
 
     //From State
-    .st_prv         ( st_prv        ), // in  
-    .st_xlen        ( st_xlen       ), // in  
-    .st_tvm         ( st_tvm        ), // in  
-    .st_tw          ( st_tw         ), // in  
-    .st_tsr         ( st_tsr        ), // in  
-    .st_mcounteren  ( st_mcounteren ), // in  
-    .st_scounteren  ( st_scounteren ), // in  
+    .st_prv         ( st_prv        ), // in  STIDEX_PORT
+    .st_xlen        ( st_xlen       ), // in  STIDEX 
+    .st_tvm         ( st_tvm        ), // in  STID
+    .st_tw          ( st_tw         ), // in  STID
+    .st_tsr         ( st_tsr        ), // in  STID 
+    .st_mcounteren  ( st_mcounteren ), // in  STID
+    .st_scounteren  ( st_scounteren ), // in  STID 
 
     //To RF
-    .id_src1        ( rf_src1[0]    ), // out 
-    .id_src2        ( rf_src2[0]    ), // out 
+    .id_src1        ( rf_src1[0]    ), // out IDRF
+    .id_src2        ( rf_src2[0]    ), // out IDRF
 
     //To execution units
-    .id_opA         ( id_opA        ), // out 
-    .id_opB         ( id_opB        ), // out 
+    .id_opA         ( id_opA        ), // out IDEX
+    .id_opB         ( id_opB        ), // out IDEX
 
-    .id_userf_opA   ( id_userf_opA  ), // out 
-    .id_userf_opB   ( id_userf_opB  ), // out 
-    .id_bypex_opA   ( id_bypex_opA  ), // out 
-    .id_bypex_opB   ( id_bypex_opB  ), // out 
-    .id_bypmem_opA  ( id_bypmem_opA ), // out 
-    .id_bypmem_opB  ( id_bypmem_opB ), // out 
-    .id_bypwb_opA   ( id_bypwb_opA  ), // out 
-    .id_bypwb_opB   ( id_bypwb_opB  ), // out 
+    .id_userf_opA   ( id_userf_opA  ), // out IDEX
+    .id_userf_opB   ( id_userf_opB  ), // out IDEX
+    .id_bypex_opA   ( id_bypex_opA  ), // out IDEX
+    .id_bypex_opB   ( id_bypex_opB  ), // out IDEX
+    .id_bypmem_opA  ( id_bypmem_opA ), // out IDEX
+    .id_bypmem_opB  ( id_bypmem_opB ), // out IDEX
+    .id_bypwb_opA   ( id_bypwb_opA  ), // out IDEX
+    .id_bypwb_opB   ( id_bypwb_opB  ), // out IDEX
 
     //from MEM/WB
-    .mem_r          ( mem_r         ), // in  
-    .wb_r           ( wb_r          )  // in  
+    .mem_r          ( mem_r         ), // in  MEIDEXWB
+    .wb_r           ( wb_r          )  // in  WBIDEXRF
   );
 
 
@@ -405,87 +402,87 @@ module riscv_core #(
     .HAS_RVM        ( HAS_RVM        ),
     .MULT_LATENCY   ( MULT_LATENCY   ) )
   ex_units (
-    .rstn             ( rstn            ), // in 
-    .clk              ( clk             ), // in 
+    .rstn             ( rstn            ), // in  PORT
+    .clk              ( clk             ), // in  PORT
 
-    .wb_stall         ( wb_stall        ), // in 
-    .ex_stall         ( ex_stall        ), // out
+    .wb_stall         ( wb_stall        ), // in  WBEXME
+    .ex_stall         ( ex_stall        ), // out EXID
 
     //Program counter
-    .id_pc            ( id_pc           ), // in 
-    .ex_pc            ( ex_pc           ), // out
-    .bu_nxt_pc        ( bu_nxt_pc       ), // out
-    .bu_flush         ( bu_flush        ), // out
-    .bu_cacheflush    ( bu_cacheflush   ), // out
-    .id_bp_predict    ( id_bp_predict   ), // in 
+    .id_pc            ( id_pc           ), // in  IDEXST
+    .ex_pc            ( ex_pc           ), // out EXME
+    .bu_nxt_pc        ( bu_nxt_pc       ), // out EXIFIDST
+    .bu_flush         ( bu_flush        ), // out EXIFIDST
+    .bu_cacheflush    ( bu_cacheflush   ), // out PORT
+    .id_bp_predict    ( id_bp_predict   ), // in  IDEX
     //.bu_bp_predict    ( bu_bp_predict   ), // out
     //.bu_bp_history    ( bu_bp_history   ), // out
     //.bu_bp_btaken     ( bu_bp_btaken    ), // out
     //.bu_bp_update     ( bu_bp_update    ), // out
 
     //Instruction
-    .id_bubble        ( id_bubble       ), // in 
-    .id_instr         ( id_instr        ), // in 
-    .ex_bubble        ( ex_bubble       ), // out
-    .ex_instr         ( ex_instr        ), // out
+    .id_bubble        ( id_bubble       ), // in  IDEXST
+    .id_instr         ( id_instr        ), // in  IDEXST
+    .ex_bubble        ( ex_bubble       ), // out EXIDME
+    .ex_instr         ( ex_instr        ), // out EXIDME
 
-    .id_exception     ( id_exception    ), // in 
-    .mem_exception    ( mem_exception   ), // in 
-    .wb_exception     ( wb_exception    ), // in 
-    .ex_exception     ( ex_exception    ), // out
+    .id_exception     ( id_exception    ), // in  IDEX
+    .mem_exception    ( mem_exception   ), // in  MEIDEXWB
+    .wb_exception     ( wb_exception    ), // in  WBIDEXME
+    .ex_exception     ( ex_exception    ), // out EXIDME
 
     //from ID
-    .id_userf_opA     ( id_userf_opA    ), // in 
-    .id_userf_opB     ( id_userf_opB    ), // in 
-    .id_bypex_opA     ( id_bypex_opA    ), // in 
-    .id_bypex_opB     ( id_bypex_opB    ), // in 
-    .id_bypmem_opA    ( id_bypmem_opA   ), // in 
-    .id_bypmem_opB    ( id_bypmem_opB   ), // in 
-    .id_bypwb_opA     ( id_bypwb_opA    ), // in 
-    .id_bypwb_opB     ( id_bypwb_opB    ), // in 
-    .id_opA           ( id_opA          ), // in 
-    .id_opB           ( id_opB          ), // in 
+    .id_userf_opA     ( id_userf_opA    ), // in  IDEX
+    .id_userf_opB     ( id_userf_opB    ), // in  IDEX
+    .id_bypex_opA     ( id_bypex_opA    ), // in  IDEX
+    .id_bypex_opB     ( id_bypex_opB    ), // in  IDEX
+    .id_bypmem_opA    ( id_bypmem_opA   ), // in  IDEX
+    .id_bypmem_opB    ( id_bypmem_opB   ), // in  IDEX
+    .id_bypwb_opA     ( id_bypwb_opA    ), // in  IDEX
+    .id_bypwb_opB     ( id_bypwb_opB    ), // in  IDEX
+    .id_opA           ( id_opA          ), // in  IDEX
+    .id_opB           ( id_opB          ), // in  IDEX
 
     //from RF
-    .rf_srcv1         ( rf_srcv1[0]     ), // in 
-    .rf_srcv2         ( rf_srcv2[0]     ), // in 
+    .rf_srcv1         ( rf_srcv1[0]     ), // in  RFEX
+    .rf_srcv2         ( rf_srcv2[0]     ), // in  RFEX
 
     //to MEM
-    .ex_r             ( ex_r            ), // out
+    .ex_r             ( ex_r            ), // out EXME
 
     //Bypasses
-    .mem_r            ( mem_r           ), // in 
-    .wb_r             ( wb_r            ), // in 
+    .mem_r            ( mem_r           ), // in  MEIDEXWB
+    .wb_r             ( wb_r            ), // in  WBIDEXRF
 
     //To State
-    .ex_csr_reg       ( ex_csr_reg      ), // out
-    .ex_csr_wval      ( ex_csr_wval     ), // out
-    .ex_csr_we        ( ex_csr_we       ), // out
+    .ex_csr_reg       ( ex_csr_reg      ), // out EXST
+    .ex_csr_wval      ( ex_csr_wval     ), // out EXST
+    .ex_csr_we        ( ex_csr_we       ), // out EXST
 
     //From State
-    .st_prv           ( st_prv          ), // in 
-    .st_xlen          ( st_xlen         ), // in 
-    .st_flush         ( st_flush        ), // in 
-    .st_csr_rval      ( st_csr_rval     ), // in 
+    .st_prv           ( st_prv          ), // in  STIDEX_PORT
+    .st_xlen          ( st_xlen         ), // in  STIDEX
+    .st_flush         ( st_flush        ), // in  STIFIDEX
+    .st_csr_rval      ( st_csr_rval     ), // in  STEX
 
     //To DCACHE/Memory
-    .dmem_adr         ( dmem_adr        ), // out
-    .dmem_d           ( dmem_d          ), // out
-    .dmem_req         ( dmem_req        ), // out
-    .dmem_we          ( dmem_we         ), // out
-    .dmem_size        ( dmem_size       ), // out
-    .dmem_ack         ( dmem_ack        ), // in 
-    .dmem_q           ( dmem_q          ), // in 
-    .dmem_misaligned  ( dmem_misaligned ), // in 
-    .dmem_page_fault  ( dmem_page_fault ), // in 
+    .dmem_adr         ( dmem_adr        ), // out EXME_PORT
+    .dmem_d           ( dmem_d          ), // out PORT
+    .dmem_req         ( dmem_req        ), // out PORT
+    .dmem_we          ( dmem_we         ), // out PORT
+    .dmem_size        ( dmem_size       ), // out PORT
+    .dmem_ack         ( dmem_ack        ), // in  PORT_EXWB
+    .dmem_q           ( dmem_q          ), // in  PORT_EXWB
+    .dmem_misaligned  ( dmem_misaligned ), // in  PORT_EXWB
+    .dmem_page_fault  ( dmem_page_fault ), // in  PORT_EXWB
 
     //Debug Unit
-    .du_stall         ( du_stall        ), // in 
-    .du_stall_dly     ( du_stall_dly    ), // in 
-    .du_flush         ( du_flush        ), // in 
-    .du_we_pc         ( du_we_pc        ), // in 
-    .du_dato          ( du_dato         ), // in 
-    .du_ie            ( du_ie           )  // in 
+    .du_stall         ( du_stall        ), // in  DBG
+    .du_stall_dly     ( du_stall_dly    ), // in  DBG
+    .du_flush         ( du_flush        ), // in  DBG 
+    .du_we_pc         ( du_we_pc        ), // in  DBG
+    .du_dato          ( du_dato         ), // in  DBG
+    .du_ie            ( du_ie           )  // in  DBG
   );
 
 
@@ -496,32 +493,32 @@ module riscv_core #(
     .XLEN           ( XLEN           ),
     .PC_INIT        ( PC_INIT        ) )
   mem_unit   (
-    .rstn           ( rstn          ), // in 
-    .clk            ( clk           ), // in 
+    .rstn           ( rstn          ), // in  PORT
+    .clk            ( clk           ), // in  PORT
 
-    .wb_stall       ( wb_stall      ), // in 
+    .wb_stall       ( wb_stall      ), // in  WBEXME
 
     //Program counter
-    .ex_pc          ( ex_pc         ), // in 
-    .mem_pc         ( mem_pc        ), // out 
+    .ex_pc          ( ex_pc         ), // in  EXME
+    .mem_pc         ( mem_pc        ), // out MEWB 
 
     //Instruction
-    .ex_bubble      ( ex_bubble     ), // in 
-    .ex_instr       ( ex_instr      ), // in 
-    .mem_bubble     ( mem_bubble    ), // out 
-    .mem_instr      ( mem_instr     ), // out 
+    .ex_bubble      ( ex_bubble     ), // in  EXIDME
+    .ex_instr       ( ex_instr      ), // in  EXIDME
+    .mem_bubble     ( mem_bubble    ), // out MEIDWB
+    .mem_instr      ( mem_instr     ), // out MEIDWB
 
-    .ex_exception   ( ex_exception  ), // in 
-    .wb_exception   ( wb_exception  ), // in 
-    .mem_exception  ( mem_exception ), // out 
+    .ex_exception   ( ex_exception  ), // in  EXIDME
+    .wb_exception   ( wb_exception  ), // in  WBIDEXME
+    .mem_exception  ( mem_exception ), // out MEIDEXWB
  
     //From EX
-    .ex_r           ( ex_r          ), // in 
-    .dmem_adr       ( dmem_adr      ), // in 
+    .ex_r           ( ex_r          ), // in  EXME
+    .dmem_adr       ( dmem_adr      ), // in  EXME_PORT
 
     //To WB
-    .mem_r          ( mem_r         ), // out 
-    .mem_memadr     ( mem_memadr    )  // out 
+    .mem_r          ( mem_r         ), // out MEIDEXWB
+    .mem_memadr     ( mem_memadr    )  // out MEWB
   );
 
 
@@ -532,28 +529,28 @@ module riscv_core #(
     .XLEN           ( XLEN           ),
     .PC_INIT        ( PC_INIT        ) )
   wb_unit   (
-    .rst_ni            ( rstn            ), // in 
-    .clk_i             ( clk             ), // in 
-    .mem_pc_i          ( mem_pc          ), // in 
-    .mem_instr_i       ( mem_instr       ), // in 
-    .mem_bubble_i      ( mem_bubble      ), // in 
-    .mem_r_i           ( mem_r           ), // in 
-    .mem_exception_i   ( mem_exception   ), // in 
-    .mem_memadr_i      ( mem_memadr      ), // in 
-    .wb_pc_o           ( wb_pc           ), // out 
-    .wb_stall_o        ( wb_stall        ), // out 
-    .wb_instr_o        ( wb_instr        ), // out 
-    .wb_bubble_o       ( wb_bubble       ), // out 
-    .wb_exception_o    ( wb_exception    ), // out 
-    .wb_badaddr_o      ( wb_badaddr      ), // out 
-    .dmem_ack_i        ( dmem_ack        ), // in 
-    .dmem_err_i        ( dmem_err        ), // in 
-    .dmem_q_i          ( dmem_q          ), // in 
-    .dmem_misaligned_i ( dmem_misaligned ), // in 
-    .dmem_page_fault_i ( dmem_page_fault ), // in 
-    .wb_dst_o          ( wb_dst          ), // out 
-    .wb_r_o            ( wb_r            ), // out 
-    .wb_we_o           ( wb_we           )  // out 
+    .rst_ni            ( rstn            ), // in  PORT
+    .clk_i             ( clk             ), // in  PORT
+    .mem_pc_i          ( mem_pc          ), // in  MEWB
+    .mem_instr_i       ( mem_instr       ), // in  MEIDWB
+    .mem_bubble_i      ( mem_bubble      ), // in  MEIDWB
+    .mem_r_i           ( mem_r           ), // in  MEIDEXWB
+    .mem_exception_i   ( mem_exception   ), // in  MEIDEXWB
+    .mem_memadr_i      ( mem_memadr      ), // in  MEWB
+    .wb_pc_o           ( wb_pc           ), // out WBST
+    .wb_stall_o        ( wb_stall        ), // out WBEXME
+    .wb_instr_o        ( wb_instr        ), // out WBIDST
+    .wb_bubble_o       ( wb_bubble       ), // out WBIDST
+    .wb_exception_o    ( wb_exception    ), // out WBIDEXME 
+    .wb_badaddr_o      ( wb_badaddr      ), // out WBST
+    .dmem_ack_i        ( dmem_ack        ), // in  PORT_EXWB
+    .dmem_err_i        ( dmem_err        ), // in  PORT
+    .dmem_q_i          ( dmem_q          ), // in  PORT_EXWB
+    .dmem_misaligned_i ( dmem_misaligned ), // in  PORT_EXWB
+    .dmem_page_fault_i ( dmem_page_fault ), // in  PORT_EXWB
+    .wb_dst_o          ( wb_dst          ), // out WBRF
+    .wb_r_o            ( wb_r            ), // out WBIDEXRF
+    .wb_we_o           ( wb_we           )  // out WBRF
   );
 
   assign rf_dst [0] = wb_dst;
@@ -585,57 +582,57 @@ module riscv_core #(
     .PMP_CNT               ( PMP_CNT               ),
     .HARTID                ( HARTID                ) )
   cpu_state (
-    .rstn           ( rstn          ), // in  
-    .clk            ( clk           ), // in  
+    .rstn           ( rstn          ), // in  PORT
+    .clk            ( clk           ), // in  PORT
 
-    .id_pc          ( id_pc         ), // in  
-    .id_bubble      ( id_bubble     ), // in  
-    .id_instr       ( id_instr      ), // in  
-    .id_stall       ( id_stall      ), // in  
+    .id_pc          ( id_pc         ), // in  IDEXST
+    .id_bubble      ( id_bubble     ), // in  IDEXST
+    .id_instr       ( id_instr      ), // in  IDEXST
+    .id_stall       ( id_stall      ), // in  IDIFST
 
-    .bu_flush       ( bu_flush      ), // in  
-    .bu_nxt_pc      ( bu_nxt_pc     ), // in  
-    .st_flush       ( st_flush      ), // out  
-    .st_nxt_pc      ( st_nxt_pc     ), // out  
+    .bu_flush       ( bu_flush      ), // in  EXIFIDST
+    .bu_nxt_pc      ( bu_nxt_pc     ), // in  EXIFIDST
+    .st_flush       ( st_flush      ), // out STIFIDEX
+    .st_nxt_pc      ( st_nxt_pc     ), // out STIFID 
 
-    .wb_pc          ( wb_pc         ), // in  
-    .wb_bubble      ( wb_bubble     ), // in  
-    .wb_instr       ( wb_instr      ), // in  
-    .wb_exception   ( wb_exception  ), // in  
-    .wb_badaddr     ( wb_badaddr    ), // in  
+    .wb_pc          ( wb_pc         ), // in  WBST
+    .wb_bubble      ( wb_bubble     ), // in  WBIDST
+    .wb_instr       ( wb_instr      ), // in  WBIDST
+    .wb_exception   ( wb_exception  ), // in  WBIDEXME
+    .wb_badaddr     ( wb_badaddr    ), // in  WBST
 
-    .st_interrupt   ( st_interrupt  ), // out  
-    .st_prv         ( st_prv        ), // out //Privilege level
-    .st_xlen        ( st_xlen       ), // out //Active Architecture
-    .st_tvm         ( st_tvm        ), // out //trap on satp access or SFENCE.VMA
-    .st_tw          ( st_tw         ), // out //trap on WFI (after time >=0)
-    .st_tsr         ( st_tsr        ), // out //trap SRET
-    .st_mcounteren  ( st_mcounteren ), // out  
-    .st_scounteren  ( st_scounteren ), // out  
-    .st_pmpcfg      ( st_pmpcfg     ), // out  
-    .st_pmpaddr     ( st_pmpaddr    ), // out  
+    //.st_interrupt   ( st_interrupt  ), // out  
+    .st_prv         ( st_prv        ), // out STIDEX_PORT //Privilege level
+    .st_xlen        ( st_xlen       ), // out STIDEX //Active Architecture
+    .st_tvm         ( st_tvm        ), // out STID //trap on satp access or SFENCE.VMA
+    .st_tw          ( st_tw         ), // out STID //trap on WFI (after time >=0)
+    .st_tsr         ( st_tsr        ), // out STID //trap SRET
+    .st_mcounteren  ( st_mcounteren ), // out STID 
+    .st_scounteren  ( st_scounteren ), // out STID 
+    .st_pmpcfg      ( st_pmpcfg     ), // out PORT 
+    .st_pmpaddr     ( st_pmpaddr    ), // out PORT 
 
 
     //interrupts (3=M-mode, 0=U-mode)
-    .ext_int        ( ext_int       ), // in  //external interrupt (per privilege mode; determined by PIC)
-    .ext_tint       ( ext_tint      ), // in  //machine timer interrupt
-    .ext_sint       ( ext_sint      ), // in  //machine software interrupt (for ipi)
-    .ext_nmi        ( ext_nmi       ), // in  //non-maskable interrupt
+    .ext_int        ( ext_int       ), // in  PORT //external interrupt (per privilege mode; determined by PIC)
+    .ext_tint       ( ext_tint      ), // in  PORT //machine timer interrupt
+    .ext_sint       ( ext_sint      ), // in  PORT //machine software interrupt (for ipi)
+    .ext_nmi        ( ext_nmi       ), // in  PORT //non-maskable interrupt
 
     //CSR interface
-    .ex_csr_reg     ( ex_csr_reg    ), // in  
-    .ex_csr_we      ( ex_csr_we     ), // in  
-    .ex_csr_wval    ( ex_csr_wval   ), // in  
-    .st_csr_rval    ( st_csr_rval   ), // out  
+    .ex_csr_reg     ( ex_csr_reg    ), // in  EXST
+    .ex_csr_we      ( ex_csr_we     ), // in  EXST
+    .ex_csr_wval    ( ex_csr_wval   ), // in  EXST
+    .st_csr_rval    ( st_csr_rval   ), // out STEX
 
     //Debug interface
-    .du_stall       ( du_stall      ), // in  
-    .du_flush       ( du_flush      ), // in  
-    .du_we_csr      ( du_we_csr     ), // in  
-    .du_dato        ( du_dato       ), // in  //output from debug unit
-    .du_addr        ( du_addr       ), // in  
-    .du_ie          ( du_ie         ), // in  
-    .du_exceptions  ( du_exceptions )  // out  
+    .du_stall       ( du_stall      ), // in  DBG
+    .du_flush       ( du_flush      ), // in  DBG
+    .du_we_csr      ( du_we_csr     ), // in  DBG  
+    .du_dato        ( du_dato       ), // in  DBG //output from debug unit
+    .du_addr        ( du_addr       ), // in  DBG  
+    .du_ie          ( du_ie         ), // in  DBG  
+    .du_exceptions  ( du_exceptions )  // out DBG  
   );
 
 
@@ -647,26 +644,26 @@ module riscv_core #(
     .RDPORTS ( 1    ),
     .WRPORTS ( 1    ) )
   int_rf (
-    .rstn       ( rstn        ), // in  
-    .clk        ( clk         ), // in 
+    .rstn       ( rstn        ), // in  PORT  
+    .clk        ( clk         ), // in  PORT 
 
     //Register File read
-    .rf_src1    ( rf_src1     ), // in 
-    .rf_src2    ( rf_src2     ), // in 
-    .rf_srcv1   ( rf_srcv1    ), // out 
-    .rf_srcv2   ( rf_srcv2    ), // out 
+    .rf_src1    ( rf_src1     ), // in  IDRF
+    .rf_src2    ( rf_src2     ), // in  IDRF
+    .rf_srcv1   ( rf_srcv1    ), // out RFEX
+    .rf_srcv2   ( rf_srcv2    ), // out RFEX
 
     //Register File write
-    .rf_dst     ( rf_dst      ), // in 
-    .rf_dstv    ( rf_dstv     ), // in 
-    .rf_we      ( rf_we       ), // in 
+    .rf_dst     ( rf_dst      ), // in WBRF
+    .rf_dstv    ( rf_dstv     ), // in WBRF
+    .rf_we      ( rf_we       ), // in WBRF
 
     //Debug Interface
-    .du_stall   ( du_stall    ), // in 
-    .du_we_rf   ( du_we_rf    ), // in 
-    .du_dato    ( du_dato     ), // in //output from debug unit
-    .du_dati_rf ( du_dati_rf  ), // out 
-    .du_addr    ( du_addr     )  // in 
+    .du_stall   ( du_stall    ), // in  DBG 
+    .du_we_rf   ( du_we_rf    ), // in  DBG 
+    .du_dato    ( du_dato     ), // in  DBG //output from debug unit
+    .du_dati_rf ( du_dati_rf  ), // out DBG 
+    .du_addr    ( du_addr     )  // in  DBG 
     );
 
 
