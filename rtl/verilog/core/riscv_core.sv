@@ -157,15 +157,13 @@ module riscv_core #(
 
   logic                      id_stall,
                              ex_stall,
-                             wb_stall;
-//                             du_stall,
-//                             du_stall_dly;
+                             wb_stall,
+                             du_stall,
+                             du_stall_dly;
 
-//  //Branch Prediction
-//  logic [               1:0] bp_bp_predict,
-//                             if_bp_predict,
-//                             id_bp_predict,
-//                             bu_bp_predict;
+  //Branch Prediction
+  logic [               1:0] if_bp_predict,
+                             id_bp_predict;
 
 //  logic [BP_GLOBAL_BITS-1:0] bu_bp_history;
 //  logic                      bu_bp_btaken,
@@ -226,18 +224,18 @@ module riscv_core #(
   logic [               0:0] wb_we;
   logic [XLEN          -1:0] wb_badaddr;
 
-//  //Debug
-//  logic                      du_we_rf,
-//                             du_we_frf,
-//                             du_we_csr,
-//                             du_we_pc;
-//  logic [DU_ADDR_SIZE  -1:0] du_addr;
-//  logic [XLEN          -1:0] du_dato,
-//                             du_dati_rf,
-//                             du_dati_frf,
-//                             du_dati_csr;
-//  logic [              31:0] du_ie,
-//                             du_exceptions;
+  //Debug
+  logic                      du_we_rf,
+                             du_we_frf,
+                             du_we_csr,
+                             du_we_pc;
+  logic [DU_ADDR_SIZE  -1:0] du_addr;
+  logic [XLEN          -1:0] du_dato,
+                             du_dati_rf,
+                             du_dati_frf,
+                             du_dati_csr;
+  logic [              31:0] du_ie,
+                             du_exceptions;
 
 
   logic [2:0]  counter;
@@ -294,12 +292,12 @@ module riscv_core #(
     .if_exception         ( if_exception          ), // out //Exceptions
 
 
-    .bp_bp_predict        ( 2'b00         ), // in  //Branch Prediction bits
+    .bp_bp_predict        ( 2'b00                 ), // in  //Branch Prediction bits
     .if_bp_predict        ( if_bp_predict         ), // out //push down the pipe
 
     .bu_flush             ( bu_flush              ), // in  //flush pipe & load new program counter
     .st_flush             ( st_flush              ), // in 
-    .du_flush             ( 1'b0              ), // in  //flush pipe after debug exit
+    .du_flush             ( du_flush              ), // in  //flush pipe after debug exit
 
     .bu_nxt_pc            ( bu_nxt_pc             ), // in  //Branch Unit Next Program Counter
     .st_nxt_pc            ( st_nxt_pc             ), // in  //State Next Program Counter
@@ -330,12 +328,11 @@ module riscv_core #(
 
     .id_stall       ( id_stall      ), // out 
     .ex_stall       ( ex_stall      ), // in  
-    .du_stall       ( 1'b0      ), // in  
+    .du_stall       ( du_stall      ), // in  
 
     .bu_flush       ( bu_flush      ), // in  
     .st_flush       ( st_flush      ), // in  
-    .du_flush       ( 1'b0      ), // in  
-
+    .du_flush       ( du_flush      ), // in  
 
     .bu_nxt_pc      ( bu_nxt_pc     ), // in  
     .st_nxt_pc      ( st_nxt_pc     ), // in  
@@ -420,11 +417,11 @@ module riscv_core #(
     .bu_nxt_pc        ( bu_nxt_pc       ), // out
     .bu_flush         ( bu_flush        ), // out
     .bu_cacheflush    ( bu_cacheflush   ), // out
-    .id_bp_predict    ( 2'b00   ), // in 
-//    .bu_bp_predict    ( bu_bp_predict   ), // out
-//    .bu_bp_history    ( bu_bp_history   ), // out
-//    .bu_bp_btaken     ( bu_bp_btaken    ), // out
-//    .bu_bp_update     ( bu_bp_update    ), // out
+    .id_bp_predict    ( id_bp_predict   ), // in 
+    //.bu_bp_predict    ( bu_bp_predict   ), // out
+    //.bu_bp_history    ( bu_bp_history   ), // out
+    //.bu_bp_btaken     ( bu_bp_btaken    ), // out
+    //.bu_bp_update     ( bu_bp_update    ), // out
 
     //Instruction
     .id_bubble        ( id_bubble       ), // in 
@@ -483,12 +480,12 @@ module riscv_core #(
     .dmem_page_fault  ( dmem_page_fault ), // in 
 
     //Debug Unit
-    .du_stall         ( 1'b0        ), // in 
-    .du_stall_dly     ( 1'b0    ), // in 
-    .du_flush         ( 1'b0        ), // in 
-    .du_we_pc         ( 1'b0        ), // in 
-    //.du_dato          ( du_dato         ), // in 
-    .du_ie            ( 32'h00000000           )  // in 
+    .du_stall         ( du_stall        ), // in 
+    .du_stall_dly     ( du_stall_dly    ), // in 
+    .du_flush         ( du_flush        ), // in 
+    .du_we_pc         ( du_we_pc        ), // in 
+    .du_dato          ( du_dato         ), // in 
+    .du_ie            ( du_ie           )  // in 
   );
 
 
@@ -535,28 +532,28 @@ module riscv_core #(
     .XLEN           ( XLEN           ),
     .PC_INIT        ( PC_INIT        ) )
   wb_unit   (
-    .rst_ni            ( rstn            ),
-    .clk_i             ( clk             ),
-    .mem_pc_i          ( mem_pc          ),
-    .mem_instr_i       ( mem_instr       ),
-    .mem_bubble_i      ( mem_bubble      ),
-    .mem_r_i           ( mem_r           ),
-    .mem_exception_i   ( mem_exception   ),
-    .mem_memadr_i      ( mem_memadr      ),
-    .wb_pc_o           ( wb_pc           ),
-    .wb_stall_o        ( wb_stall        ),
-    .wb_instr_o        ( wb_instr        ),
-    .wb_bubble_o       ( wb_bubble       ),
-    .wb_exception_o    ( wb_exception    ),
-    .wb_badaddr_o      ( wb_badaddr      ),
-    .dmem_ack_i        ( dmem_ack        ),
-    .dmem_err_i        ( dmem_err        ),
-    .dmem_q_i          ( dmem_q          ),
-    .dmem_misaligned_i ( dmem_misaligned ),
-    .dmem_page_fault_i ( dmem_page_fault ),
-    .wb_dst_o          ( wb_dst          ),
-    .wb_r_o            ( wb_r            ),
-    .wb_we_o           ( wb_we           )
+    .rst_ni            ( rstn            ), // in 
+    .clk_i             ( clk             ), // in 
+    .mem_pc_i          ( mem_pc          ), // in 
+    .mem_instr_i       ( mem_instr       ), // in 
+    .mem_bubble_i      ( mem_bubble      ), // in 
+    .mem_r_i           ( mem_r           ), // in 
+    .mem_exception_i   ( mem_exception   ), // in 
+    .mem_memadr_i      ( mem_memadr      ), // in 
+    .wb_pc_o           ( wb_pc           ), // out 
+    .wb_stall_o        ( wb_stall        ), // out 
+    .wb_instr_o        ( wb_instr        ), // out 
+    .wb_bubble_o       ( wb_bubble       ), // out 
+    .wb_exception_o    ( wb_exception    ), // out 
+    .wb_badaddr_o      ( wb_badaddr      ), // out 
+    .dmem_ack_i        ( dmem_ack        ), // in 
+    .dmem_err_i        ( dmem_err        ), // in 
+    .dmem_q_i          ( dmem_q          ), // in 
+    .dmem_misaligned_i ( dmem_misaligned ), // in 
+    .dmem_page_fault_i ( dmem_page_fault ), // in 
+    .wb_dst_o          ( wb_dst          ), // out 
+    .wb_r_o            ( wb_r            ), // out 
+    .wb_we_o           ( wb_we           )  // out 
   );
 
   assign rf_dst [0] = wb_dst;
@@ -632,13 +629,13 @@ module riscv_core #(
     .st_csr_rval    ( st_csr_rval   ), // out  
 
     //Debug interface
-    .du_stall       ( 1'b0      ), // in  
-    .du_flush       ( 1'b0      ), // in  
-    //.du_we_csr      ( 1'b0          ), // in  
-    //.du_dato        ( du_dato       ), // in  //output from debug unit
-    //.du_addr        ( du_addr       ), // in  
-    .du_ie          ( 32'h00000000  )  // in  
-    //.du_exceptions  ( du_exceptions )  // out  
+    .du_stall       ( du_stall      ), // in  
+    .du_flush       ( du_flush      ), // in  
+    .du_we_csr      ( du_we_csr     ), // in  
+    .du_dato        ( du_dato       ), // in  //output from debug unit
+    .du_addr        ( du_addr       ), // in  
+    .du_ie          ( du_ie         ), // in  
+    .du_exceptions  ( du_exceptions )  // out  
   );
 
 
@@ -650,7 +647,7 @@ module riscv_core #(
     .RDPORTS ( 1    ),
     .WRPORTS ( 1    ) )
   int_rf (
-    .rstn       ( rstn      ), // in  
+    .rstn       ( rstn        ), // in  
     .clk        ( clk         ), // in 
 
     //Register File read
@@ -665,48 +662,67 @@ module riscv_core #(
     .rf_we      ( rf_we       ), // in 
 
     //Debug Interface
-    .du_stall   ( 1'b0    ), // in 
-    .du_we_rf   ( 1'b0    )  // in 
-    //.du_dato    ( du_dato     ), // in //output from debug unit
-    //.du_dati_rf ( du_dati_rf  ), // out 
-    //.du_addr    ( du_addr     )  // in 
+    .du_stall   ( du_stall    ), // in 
+    .du_we_rf   ( du_we_rf    ), // in 
+    .du_dato    ( du_dato     ), // in //output from debug unit
+    .du_dati_rf ( du_dati_rf  ), // out 
+    .du_addr    ( du_addr     )  // in 
     );
 
 
-//  /*
-//   * Branch Prediction Unit
-//   *
-//   * Get Branch Prediction for Next Program Counter
-//   */
-//generate
-//  if (HAS_BPU == 0)
-//  begin
-//      assign bp_bp_predict = 2'b00;
-//  end
-//  else
-//    riscv_bp #(
-//      .XLEN              ( XLEN           ),
-//      .PC_INIT           ( PC_INIT        ),
-//      .BP_GLOBAL_BITS    ( BP_GLOBAL_BITS ),
-//      .BP_LOCAL_BITS     ( BP_LOCAL_BITS  ),
-//      .BP_LOCAL_BITS_LSB ( 2              ), 
-//      .TECHNOLOGY        ( TECHNOLOGY     ) )
-//    bp_unit (
-//      .rst_ni          ( rstn          ),
-//      .clk_i           ( clk           ),
+  /*
+   * Debug Unit
+   */
+  riscv_du #(
+    .XLEN           ( XLEN           ),
+    .BREAKPOINTS    ( BREAKPOINTS    ) )
+  du_unit (
+    .rstn           ( rstn          ), // in
+    .clk            ( clk           ), // in
 
-//      .id_stall_i      ( id_stall      ),
-//      .if_parcel_pc_i  ( if_parcel_pc  ),
-//      .bp_bp_predict_o ( bp_bp_predict ),
-
-//      .ex_pc_i         ( ex_pc ),
-//      .bu_bp_history_i ( bu_bp_history ),
-//      .bu_bp_predict_i ( bu_bp_predict ), //prediction bits for branch
-//      .bu_bp_btaken_i  ( bu_bp_btaken  ),
-//      .bu_bp_update_i  ( bu_bp_update  )
-//    );
-//endgenerate
-
+    //Debug Port interface
+    .dbg_stall      ( dbg_stall     ), // in
+    .dbg_strb       ( dbg_strb      ), // in
+    .dbg_we         ( dbg_we        ), // in
+    .dbg_addr       ( dbg_addr      ), // in
+    .dbg_dati       ( dbg_dati      ), // in
+    .dbg_dato       ( dbg_dato      ), // out
+    .dbg_ack        ( dbg_ack       ), // out
+    .dbg_bp         ( dbg_bp        ), // out
+  
+    //CPU signals
+    .du_stall       ( du_stall      ), // out
+    .du_stall_dly   ( du_stall_dly  ), // out
+    .du_flush       ( du_flush      ), // out
+    .du_we_rf       ( du_we_rf      ), // out
+    .du_we_frf      ( du_we_frf     ), // out
+    .du_we_csr      ( du_we_csr     ), // out
+    .du_we_pc       ( du_we_pc      ), // out
+    .du_addr        ( du_addr       ), // out
+    .du_dato        ( du_dato       ), // out
+    .du_ie          ( du_ie         ), // out
+    .du_dati_rf     ( du_dati_rf    ), // in
+    .du_dati_frf    ( du_dati_frf   ), // in
+    .st_csr_rval    ( st_csr_rval   ), // in
+    .if_pc          ( if_pc         ), // in
+    .id_pc          ( id_pc         ), // in
+    .ex_pc          ( ex_pc         ), // in
+    .bu_nxt_pc      ( bu_nxt_pc     ), // in
+    .bu_flush       ( bu_flush      ), // in
+    .st_flush       ( st_flush      ), // in
+    
+    .if_instr       ( if_instr      ), // in
+    .mem_instr      ( mem_instr     ), // in
+    .if_bubble      ( if_bubble     ), // in
+    .mem_bubble     ( mem_bubble    ), // in
+    .mem_exception  ( mem_exception ), // in
+    .mem_memadr     ( mem_memadr    ), // in
+    .dmem_ack       ( dmem_ack      ), // in
+    .ex_stall       ( ex_stall      ), // in
+    
+    //From state
+    .du_exceptions  ( du_exceptions )  // in
+  );
 
 endmodule
 
