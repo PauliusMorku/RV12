@@ -1,20 +1,48 @@
+macro unsigned examination_window := 20 end macro;
+
+// Constants used for instruction filters
+macro int OPCODE_U_LUI		:= 32'h00000037 end macro; //0110111
+macro int OPCODE_U_AUIPC 	:= 32'h00000017 end macro; //0010111
+macro int OPCODE_J_JAL		:= 32'h0000006F end macro; //1101111
+macro int OPCODE_I_JALR		:= 32'h00000067 end macro; //1100111
+macro int OPCODE_B			:= 32'h00000063 end macro; //1100011
+macro int OPCODE_I_L		:= 32'h00000003 end macro; //0000011
+macro int OPCODE_S			:= 32'h00000023 end macro; //0100011
+macro int OPCODE_I			:= 32'h00000013 end macro; //0010011
+macro int OPCODE_R			:= 32'h00000033 end macro; //0110011
+macro int OPCODE_MEM		:= 32'h0000000F end macro; //0001111
+macro int OPCODE_SYS		:= 32'h00000073 end macro; //1110011
+
+macro logic m_IF_rx := (c/id_stall == 0) end macro;
+macro logic m_ID_rx := (1) end macro;
+macro logic m_EX_rx := (1) end macro;
+macro logic m_ME_rx := (1) end macro;
+macro logic m_WB_rx := (1) end macro;
+
+macro logic m_IF_tx := (1) end macro;
+macro logic m_ID_tx := (1) end macro;
+macro logic m_EX_tx := (1) end macro;
+macro logic m_ME_tx := (1) end macro;
+macro logic m_WB_tx := (1) end macro;
+
+macro logic m_IF_flush := 0 end macro;
+macro logic m_ID_flush := 0 end macro;
+macro logic m_EX_flush := 0 end macro;
+macro logic m_ME_flush := 0 end macro;
+macro logic m_WB_flush := 0 end macro;
+
 constraint no_reset :=
 	c/rstn == 1;
 end constraint;
 
-constraint no_stall :=
-	//c/ex_stall == 0 &&
-	c/du_stall == 0;
+constraint no_dbg_stall :=
+	c/dbg_stall == 0;
 end constraint;
 
 constraint no_flush :=
-	c/bu_flush == 0 &&
-	c/st_flush == 0 &&
+	((c/bu_flush == 0) || prev(c/rstn == 0)) &&
+	((c/st_flush == 0) || prev(c/rstn == 0)) &&
 	c/du_flush == 0;
-end constraint;
-
-constraint no_branch_predict :=
-	c/if_unit/bp_bp_predict == 2'b00;
 end constraint;
 
 constraint no_if_stall_nxt_pc :=
@@ -46,17 +74,19 @@ constraint no_exception :=
 end constraint;
 
 constraint no_id_hazard :=
-	c/id_unit/if_src1 != c/id_unit/id_dst &&
-	c/id_unit/if_src2 != c/id_unit/id_dst &&
-	c/id_unit/if_src1 != c/id_unit/ex_dst &&
-	c/id_unit/if_src2 != c/id_unit/ex_dst;
+	(c/id_unit/if_src1 != c/id_unit/id_dst) &&
+	(c/id_unit/if_src2 != c/id_unit/id_dst) &&
+	(c/id_unit/if_src1 != c/id_unit/ex_dst) &&
+	(c/id_unit/if_src2 != c/id_unit/ex_dst);
 end constraint;
 
+/*
 macro boolean id_in_notify_m := ((c/id_stall == 0) || !(c/ex_stall == 0)); end macro;
 macro boolean id_in_sync_m := (c/if_bubble == 0); end macro;
 
 macro boolean id_out_notify_m := (c/id_bubble == 0); end macro;
 macro boolean id_out_sync_m := (c/ex_stall == 0); end macro;
+*/
 
 property reset;
 dependencies:
@@ -74,4 +104,116 @@ assume:
 	at t: true;
 prove:
 	at t+1: true;
+end property;
+
+property test;
+dependencies: no_reset, no_if_stall_nxt_pc, no_dbg_stall, no_flush, no_exception;
+for timepoints:
+	t1_IF_rx = t,
+	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+	t1_EX_rx = t + 0..examination_window waits_for complete next(EX_tcnt == 1),
+	t1_ME_rx = t + 0..examination_window waits_for complete next(ME_tcnt == 1),
+	t1_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 1),
+
+	t2_IF_rx = t + 0..examination_window waits_for complete next(IF_tcnt == 2),
+	t2_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 2),
+	t2_EX_rx = t + 0..examination_window waits_for complete next(EX_tcnt == 2),
+	t2_ME_rx = t + 0..examination_window waits_for complete next(ME_tcnt == 2),
+	t2_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 2),
+
+
+	t1_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 1)) || (next(IF_tcnt) > 1)),
+	t1_ID_tx = t + 1..examination_window waits_for complete ((m_ID_tx && (ID_tcnt == 1)) || (next(ID_tcnt) > 1)),
+	t1_EX_tx = t + 1..examination_window waits_for complete ((m_EX_tx && (EX_tcnt == 1)) || (next(EX_tcnt) > 1)),
+	t1_ME_tx = t + 1..examination_window waits_for complete ((m_ME_tx && (ME_tcnt == 1)) || (next(ME_tcnt) > 1)),
+	t1_WB_tx = t + 1..examination_window waits_for complete ((m_WB_tx && (WB_tcnt == 1)) || (next(WB_tcnt) > 1)),
+
+	t2_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 2)) || (next(IF_tcnt) > 2)),
+	t2_ID_tx = t + 1..examination_window waits_for complete ((m_ID_tx && (ID_tcnt == 2)) || (next(ID_tcnt) > 2)),
+	t2_EX_tx = t + 1..examination_window waits_for complete ((m_EX_tx && (EX_tcnt == 2)) || (next(EX_tcnt) > 2)),
+	t2_ME_tx = t + 1..examination_window waits_for complete ((m_ME_tx && (ME_tcnt == 2)) || (next(ME_tcnt) > 2)),
+	t2_WB_tx = t + 1..examination_window waits_for complete ((m_WB_tx && (WB_tcnt == 2)) || (next(WB_tcnt) > 2)),
+
+	// Detect flushing cases
+	t1_IF_flush = t + 0..examination_window waits_for complete (m_IF_flush && (IF_tcnt == 1)),
+	t1_ID_flush = t + 0..examination_window waits_for complete (m_ID_flush && (ID_tcnt == 1)),
+	t1_EX_flush = t + 0..examination_window waits_for complete (m_EX_flush && (EX_tcnt == 1)),
+	t1_ME_flush = t + 0..examination_window waits_for complete (m_ME_flush && (ME_tcnt == 1)),
+	t1_WB_flush = t + 0..examination_window waits_for complete (m_WB_flush && (WB_tcnt == 1)),
+
+	t2_IF_flush = t + 0..examination_window waits_for complete (m_IF_flush && (IF_tcnt == 2)),
+	t2_ID_flush = t + 0..examination_window waits_for complete (m_ID_flush && (ID_tcnt == 2)),
+	t2_EX_flush = t + 0..examination_window waits_for complete (m_EX_flush && (EX_tcnt == 2)),
+	t2_ME_flush = t + 0..examination_window waits_for complete (m_ME_flush && (ME_tcnt == 2)),
+	t2_WB_flush = t + 0..examination_window waits_for complete (m_WB_flush && (WB_tcnt == 2)),
+
+
+	t_dummy = t; // last dummy line (for the semicolon)
+
+freeze:
+	// Freeze signals indicating flushing cases
+	at_t1_IF_flush = m_IF_flush@t1_IF_flush,
+	at_t1_ID_flush = m_ID_flush@t1_ID_flush,
+	at_t1_EX_flush = m_EX_flush@t1_EX_flush,
+	at_t1_ME_flush = m_ME_flush@t1_ME_flush,
+	at_t1_WB_flush = m_WB_flush@t1_WB_flush,
+
+	at_t2_IF_flush = m_IF_flush@t2_IF_flush,
+	at_t2_ID_flush = m_ID_flush@t2_ID_flush,
+	at_t2_EX_flush = m_EX_flush@t2_EX_flush,
+	at_t2_ME_flush = m_ME_flush@t2_ME_flush,
+	at_t2_WB_flush = m_WB_flush@t2_WB_flush,
+
+	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
+
+assume:
+	// Property is triggered whenever a token successfully traverses the pipeline with no flushing
+	at t1_IF_rx: next(IF_tcnt == 1);
+	at t1_ID_rx: next(ID_tcnt == 1);
+	at t1_EX_rx: next(EX_tcnt == 1);
+	at t1_ME_rx: next(ME_tcnt == 1);
+	at t1_WB_rx: next(WB_tcnt == 1);
+
+	// Connect token counters
+	at t: IF_tcnt == 0;
+	during[t_first,t_last]: IF_tcnt_inc == m_IF_rx;
+	at t: ID_tcnt == 0;
+	during[t_first,t_last]: ID_tcnt_inc == m_ID_rx;
+	at t: EX_tcnt == 0;
+	during[t_first,t_last]: EX_tcnt_inc == m_EX_rx;
+	at t: ME_tcnt == 0;
+	during[t_first,t_last]: ME_tcnt_inc == m_ME_rx;
+	at t: WB_tcnt == 0;
+	during[t_first,t_last]: WB_tcnt_inc == m_WB_rx;
+/*
+	// Detect token flushing
+	during[t_first,t_last]: t1_flush == at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush;
+	during[t_first,t_last]: t2_flush == at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush;
+
+	// Make sure that property does not start at flushing and no flushing occur withing the window
+	at t: t1_flush == 0;
+	at t: t2_flush == 0;
+*/
+prove:
+	true;
+
+	// Prove that events take place
+	at t1_IF_tx: m_IF_tx && (IF_tcnt == 1);
+	at t1_ID_tx: m_ID_tx && (ID_tcnt == 1);
+	at t1_EX_tx: m_EX_tx && (EX_tcnt == 1);
+	at t1_ME_tx: m_ME_tx && (ME_tcnt == 1);
+	at t1_WB_tx: m_WB_tx && (WB_tcnt == 1);
+
+	// Prove right hook
+	at t2_IF_rx: next(IF_tcnt == 2);
+	at t2_IF_tx: m_IF_tx && (IF_tcnt == 2);
+	at t2_ID_rx: next(ID_tcnt == 2);
+	at t2_ID_tx: m_ID_tx && (ID_tcnt == 2);
+	at t2_EX_rx: next(EX_tcnt == 2);
+	at t2_EX_tx: m_EX_tx && (EX_tcnt == 2);
+	at t2_ME_rx: next(ME_tcnt == 2);
+	at t2_ME_tx: m_ME_tx && (ME_tcnt == 2);
+	at t2_WB_rx: next(WB_tcnt == 2);
+	at t2_WB_tx: m_WB_tx && (WB_tcnt == 2);
+
 end property;
