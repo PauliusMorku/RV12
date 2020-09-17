@@ -233,28 +233,6 @@ module riscv_core #(
   logic [              31:0] du_ie,
                              du_exceptions;
 
-
-  logic [2:0]  counter;
-
-  always_ff @(posedge clk, negedge rstn)
-  begin
-    if (rstn == 1'b0)
-    begin
-		counter = 0;
-	end
-    else
-    begin
-        if (counter == 1)// && id_ready == 1'b1) 
-        begin
-            counter = 0;
-        end
-        else //if (counter != 3) 
-        begin
-            counter = counter + 1;
-        end
-    end
-  end
-
   ////////////////////////////////////////////////////////////////
   //
   // Module Body

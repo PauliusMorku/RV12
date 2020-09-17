@@ -645,7 +645,7 @@ endgenerate
         //push privilege stack
         if (ext_nmi)
         begin
-$display ("NMI");
+//$display ("NMI");
             //NMI always at Machine-mode
             st_prv    <= PRV_M;
             st_nxt_pc <= csr.mnmivec;
@@ -658,7 +658,7 @@ $display ("NMI");
         end
         else if (take_interrupt)
         begin
-$display ("take_interrupt");
+//$display ("take_interrupt");
             st_flush  <= ~du_stall & ~du_flush;
 
             //Check if interrupts are delegated
@@ -702,7 +702,7 @@ $display ("take_interrupt");
         end
         else if ( |(wb_exception & ~du_ie[15:0]) )
         begin
-$display("exception");
+//$display("exception");
             st_flush  <= 1'b1;
 
             if (has_n && st_prv == PRV_U && |(wb_exception & csr.medeleg))

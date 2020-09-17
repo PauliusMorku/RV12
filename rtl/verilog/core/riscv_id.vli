@@ -1,0 +1,105 @@
+constraint no_reset :=
+	rstn == 1;
+end constraint;
+
+constraint no_stall :=
+	//ex_stall == 0 &&
+	du_stall == 0;
+end constraint;
+
+constraint no_flush :=
+	bu_flush == 0 &&
+	st_flush == 0 &&
+	du_flush == 0;
+end constraint;
+
+constraint no_branch_predict :=
+	bp_bp_predict == 2'b00;
+end constraint;
+
+constraint no_if_stall_nxt_pc :=
+	if_stall_nxt_pc == 0;
+end constraint;
+
+constraint if_nop :=
+	if_instr == 32'h00000013;
+end constraint;
+
+constraint id_nop :=
+	id_instr == 32'h00000013;
+end constraint;
+
+constraint ex_nop :=
+	ex_instr == 32'h00000013;
+end constraint;
+
+constraint no_ex_bubble :=
+	ex_bubble == 0;
+end constraint;
+
+constraint no_exception :=
+	if_exception == 0 &&
+	ex_exception == 0 &&
+	mem_exception == 0 &&
+	wb_exception == 0 &&
+	id_exception == 0;
+end constraint;
+
+constraint no_id_hazard :=
+	if_src1 != id_dst &&
+	if_src2 != id_dst &&
+	if_src1 != ex_dst &&
+	if_src2 != ex_dst;
+end constraint;
+
+
+
+macro boolean id_in_notify_m := ((id_stall == 0) || !(ex_stall == 0)); end macro;
+macro boolean id_in_sync_m := (if_bubble == 0); end macro;
+
+//macro boolean id_out_notify_m := (id_bubble == 0 && !prev(ex_stall)) || ((id_bubble == 1) && (ex_stall == 1)); end macro;
+macro boolean id_out_notify_m := (id_bubble == 0); end macro;
+macro boolean id_out_sync_m := (ex_stall == 0); end macro;
+
+property id_reset_to_in_notify;
+dependencies:
+	no_reset, no_stall, no_flush, ex_nop, id_nop;
+assume:
+    reset_sequence;
+prove:
+	at t: id_in_notify_m || !id_out_sync_m;
+	at t: !id_out_notify_m;
+end property;
+
+property id_in_notify;
+dependencies:
+	no_reset, no_stall, no_flush, no_ex_bubble, no_exception;//, if_nop, ex_nop;
+assume:
+	at t: id_in_notify_m || !id_out_sync_m;
+	at t: !id_out_notify_m;
+	at t: !id_in_sync_m;
+prove:
+	at t+1: id_in_notify_m || !id_out_sync_m;
+	//at t+1: !id_out_notify_m;
+end property;
+
+property id_in_notify2;
+dependencies:
+	no_reset, no_stall, no_flush, no_ex_bubble, no_exception, no_id_hazard;//, if_nop, ex_nop;
+assume:
+	at t: id_in_notify_m;
+	at t: !id_in_sync_m;
+prove:
+	at t+1: id_in_notify_m;
+	//at t+1: !id_out_notify_m;
+end property;
+
+property id_in_notify_to_out_notify;
+dependencies:
+	no_reset, no_stall, no_flush, no_ex_bubble, no_exception, no_id_hazard;//, if_nop, ex_nop;
+assume:
+	at t: id_in_notify_m;
+	at t: id_in_sync_m;
+prove:
+	at t+1: id_out_notify_m || ex_stall == 1;
+end property;
