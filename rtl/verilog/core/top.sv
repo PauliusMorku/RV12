@@ -80,8 +80,51 @@ module top #(
   input        [XLEN         -1:0] dbg_dati,
   output       [XLEN         -1:0] dbg_dato,
   output                           dbg_ack,
-  output                           dbg_bp
+  output                           dbg_bp,
+
+  // Verification related signals
+  input                            IF_tcnt_inc,
+  input                            ID_tcnt_inc,
+  input                            EX_tcnt_inc,
+  input                            ME_tcnt_inc,
+  input                            WB_tcnt_inc,
+  input                            t1_flush,
+  input                            t2_flush,
+  input                            t3_flush
 );
+
+
+  logic [5:0] IF_tcnt;
+  logic [5:0] ID_tcnt;
+  logic [5:0] EX_tcnt;
+  logic [5:0] ME_tcnt;
+  logic [5:0] WB_tcnt;
+
+
+  always_ff @(posedge clk)
+  begin
+    if (IF_tcnt_inc)
+    begin
+      IF_tcnt = $size(IF_tcnt)'($size(IF_tcnt+1)'(IF_tcnt)+1);
+    end
+    if (ID_tcnt_inc)
+    begin
+      ID_tcnt = IF_tcnt;
+    end
+    if (EX_tcnt_inc)
+    begin
+      EX_tcnt = ID_tcnt;
+    end
+    if (ME_tcnt_inc)
+    begin
+      ME_tcnt = EX_tcnt;
+    end
+    if (WB_tcnt_inc)
+    begin
+      WB_tcnt = ME_tcnt;
+    end
+  end
+
 
   riscv_core #(
     .XLEN                  ( XLEN                  ),
