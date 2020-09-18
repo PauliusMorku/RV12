@@ -100,28 +100,30 @@ module top #(
   logic [5:0] ME_tcnt;
   logic [5:0] WB_tcnt;
 
+  typedef enum int {INSTR_UNKNOWN, INSTR_ADD, INSTR_ADDI, INSTR_AND, INSTR_ANDI, INSTR_AUIPC, INSTR_BEQ, INSTR_BGE, INSTR_BGEU, INSTR_BLT, INSTR_BLTU, INSTR_BNE, INSTR_CSRRC, INSTR_CSRRCI, INSTR_CSRRS, INSTR_CSRRSI, INSTR_CSRRW, INSTR_CSRRWI, INSTR_EBREAK, INSTR_ECALL, INSTR_FENCE, INSTR_FENCEI, INSTR_JAL, INSTR_JALR, INSTR_LB, INSTR_LBU, INSTR_LH, INSTR_LHU, INSTR_LUI, INSTR_LW, INSTR_MRET, INSTR_OR, INSTR_ORI, INSTR_SB, INSTR_SFENCEVMA, INSTR_SH, INSTR_SLL, INSTR_SLLI, INSTR_SLT, INSTR_SLTI, INSTR_SLTIU, INSTR_SLTU, INSTR_SRA, INSTR_SRAI, INSTR_SRET, INSTR_SRL, INSTR_SRLI, INSTR_SUB, INSTR_SW, INSTR_URET, INSTR_WFI, INSTR_XOR, INSTR_XORI} Instr_t;
+
 
   always_ff @(posedge clk)
   begin
     if (IF_tcnt_inc)
     begin
-      IF_tcnt = $size(IF_tcnt)'($size(IF_tcnt+1)'(IF_tcnt)+1);
+      IF_tcnt <= $size(IF_tcnt)'($size(IF_tcnt+1)'(IF_tcnt)+1);
     end
     if (ID_tcnt_inc)
     begin
-      ID_tcnt = IF_tcnt;
+      ID_tcnt <= IF_tcnt;
     end
     if (EX_tcnt_inc)
     begin
-      EX_tcnt = ID_tcnt;
+      EX_tcnt <= ID_tcnt;
     end
     if (ME_tcnt_inc)
     begin
-      ME_tcnt = EX_tcnt;
+      ME_tcnt <= EX_tcnt;
     end
     if (WB_tcnt_inc)
     begin
-      WB_tcnt = ME_tcnt;
+      WB_tcnt <= ME_tcnt;
     end
   end
 

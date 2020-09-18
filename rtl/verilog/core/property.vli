@@ -1,22 +1,9 @@
 macro unsigned examination_window := 20 end macro;
 
-// Constants used for instruction filters
-macro int OPCODE_U_LUI		:= 32'h00000037 end macro; //0110111
-macro int OPCODE_U_AUIPC 	:= 32'h00000017 end macro; //0010111
-macro int OPCODE_J_JAL		:= 32'h0000006F end macro; //1101111
-macro int OPCODE_I_JALR		:= 32'h00000067 end macro; //1100111
-macro int OPCODE_B			:= 32'h00000063 end macro; //1100011
-macro int OPCODE_I_L		:= 32'h00000003 end macro; //0000011
-macro int OPCODE_S			:= 32'h00000023 end macro; //0100011
-macro int OPCODE_I			:= 32'h00000013 end macro; //0010011
-macro int OPCODE_R			:= 32'h00000033 end macro; //0110011
-macro int OPCODE_MEM		:= 32'h0000000F end macro; //0001111
-macro int OPCODE_SYS		:= 32'h00000073 end macro; //1110011
-
-macro logic m_IF_rx := (c/id_stall == 0) end macro;
-macro logic m_ID_rx := (1) end macro;
-macro logic m_EX_rx := (1) end macro;
-macro logic m_ME_rx := (1) end macro;
+macro logic m_IF_rx := (c/if_unit/id_stall == 0) end macro;
+macro logic m_ID_rx := (c/id_unit/if_bubble == 0) end macro;
+macro logic m_EX_rx := (c/ex_units/id_bubble == 0) end macro;
+macro logic m_ME_rx := (c/mem_unit/ex_bubble == 0) end macro;
 macro logic m_WB_rx := (1) end macro;
 
 macro logic m_IF_tx := (1) end macro;
@@ -30,6 +17,52 @@ macro logic m_ID_flush := 0 end macro;
 macro logic m_EX_flush := 0 end macro;
 macro logic m_ME_flush := 0 end macro;
 macro logic m_WB_flush := 0 end macro;
+
+// Instruction filters are used to constrain the instructions that are read from the memory (to avoid illegal instructions and reduce computation complexity)
+macro bit instr_filter1(unsigned encodedInstr) := 
+	/*(getOpcode(encodedInstr) == OPCODE_I_L) ||
+	(getOpcode(encodedInstr) == OPCODE_S) ||
+	(getOpcode(encodedInstr) == OPCODE_I) ||*/
+	(getOpcode(encodedInstr) == OPCODE_R) /*||
+	(getOpcode(encodedInstr) == OPCODE_B)*/
+end macro;
+
+
+macro bit instr_filter2(unsigned encodedInstr) := 
+	/*(getInstr(encodedInstr) == INSTR_LW) ||
+	(getInstr(encodedInstr) == INSTR_SW) ||
+	(getInstr(encodedInstr) == INSTR_ADDI) ||*/
+	(getInstr(encodedInstr) == INSTR_ADD) /*||
+	(getInstr(encodedInstr) == INSTR_BEQ)*/
+end macro;
+
+/*
+macro instr_filter3(unsigned encodedInstr) := 
+	(getInstr(encodedInstr) == INSTR_LW && 
+	((getImmediate(encodedInstr) 	& 32'hFFFFFFFC) = 0) && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRDAddr(encodedInstr) 		& 32'hFFFFFFFC) = 0)) 
+	||
+	(getInstr(encodedInstr) == INSTR_SW && 
+	((getImmediate(encodedInstr) 	& 32'hFFFFFFFC) = 0) && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRS2Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0)) 
+	||
+	(getInstr(encodedInstr) == INSTR_ADDI && 
+	((getImmediate(encodedInstr) 	& 32'hFFFFFFFC) = 0) &&
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) &&  
+	((getRDAddr(encodedInstr) 		& 32'hFFFFFFFC) = 0)) 
+	||
+	(getInstr(encodedInstr) == INSTR_ADD && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRS2Addr(encodedInstr)		& 32'hFFFFFFFC) = 0) && 
+	((getRDAddr(encodedInstr) 		& 32'hFFFFFFFC) = 0))
+	||
+	(getInstr(encodedInstr) == INSTR_BEQ && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRS2Addr(encodedInstr)		& 32'hFFFFFFFC) = 0))
+end macro;
+*/
 
 constraint no_reset :=
 	c/rstn == 1;
@@ -65,6 +98,14 @@ constraint no_ex_bubble :=
 	c/ex_bubble == 0;
 end constraint;
 
+constraint dmem_ready :=
+	dmem_ack == 1;
+end constraint;
+
+constraint if_parcel_valid2 :=
+	((c/if_unit/pd_bubble == 0) || prev(c/rstn == 0) || prev(c/rstn == 0, 2)); 
+end constraint;
+
 constraint no_exception :=
 	c/if_exception == 0 &&
 	c/ex_exception == 0 &&
@@ -74,10 +115,10 @@ constraint no_exception :=
 end constraint;
 
 constraint no_id_hazard :=
-	(c/id_unit/if_src1 != c/id_unit/id_dst) &&
-	(c/id_unit/if_src2 != c/id_unit/id_dst) &&
-	(c/id_unit/if_src1 != c/id_unit/ex_dst) &&
-	(c/id_unit/if_src2 != c/id_unit/ex_dst);
+	(((c/id_unit/if_src1 != c/id_unit/id_dst) || prev(c/rstn == 0)) &&
+	((c/id_unit/if_src2 != c/id_unit/id_dst) || prev(c/rstn == 0)) &&
+	((c/id_unit/if_src1 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)) &&
+	((c/id_unit/if_src2 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)));
 end constraint;
 
 /*
@@ -107,7 +148,7 @@ prove:
 end property;
 
 property test;
-dependencies: no_reset, no_if_stall_nxt_pc, no_dbg_stall, no_flush, no_exception;
+dependencies: no_reset, no_if_stall_nxt_pc, no_dbg_stall, no_flush, no_exception, dmem_ready, if_parcel_valid2;
 for timepoints:
 	t1_IF_rx = t,
 	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
@@ -185,6 +226,8 @@ assume:
 	during[t_first,t_last]: ME_tcnt_inc == m_ME_rx;
 	at t: WB_tcnt == 0;
 	during[t_first,t_last]: WB_tcnt_inc == m_WB_rx;
+
+	//during[t_first,t_last]: instr_filter2(unsigned(c/if_instr)) == true;
 /*
 	// Detect token flushing
 	during[t_first,t_last]: t1_flush == at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush;

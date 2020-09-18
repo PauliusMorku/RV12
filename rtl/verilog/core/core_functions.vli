@@ -1,0 +1,124 @@
+// Constants used for instruction filters
+macro unsigned OPCODE_U_LUI		:= 32'h00000037 end macro; //0110111
+macro unsigned OPCODE_U_AUIPC 	:= 32'h00000017 end macro; //0010111
+macro unsigned OPCODE_J_JAL		:= 32'h0000006F end macro; //1101111
+macro unsigned OPCODE_I_JALR	:= 32'h00000067 end macro; //1100111
+macro unsigned OPCODE_B			:= 32'h00000063 end macro; //1100011
+macro unsigned OPCODE_I_L		:= 32'h00000003 end macro; //0000011
+macro unsigned OPCODE_S			:= 32'h00000023 end macro; //0100011
+macro unsigned OPCODE_I			:= 32'h00000013 end macro; //0010011
+macro unsigned OPCODE_R			:= 32'h00000033 end macro; //0110011
+macro unsigned OPCODE_MEM		:= 32'h0000000F end macro; //0001111
+macro unsigned OPCODE_SYS		:= 32'h00000073 end macro; //1110011
+
+// Functions
+
+macro unsigned getOpcode(unsigned encodedInstr) := encodedInstr[6:0] end macro; 
+
+macro expr getInstr(unsigned encodedInstr) := 
+	if 	    (encodedInstr[6:0] == 32'h00000037) INSTR_LUI
+	elseif  (encodedInstr[6:0] == 32'h00000017) INSTR_AUIPC
+	elseif  (encodedInstr[6:0] == 32'h0000006F) INSTR_JAL
+	elseif  (encodedInstr[6:0] == 32'h00000067) INSTR_JALR
+	elseif ((encodedInstr[6:0] == 32'h00000063) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) INSTR_BEQ
+	elseif ((encodedInstr[6:0] == 32'h00000063) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) INSTR_BNE
+	elseif ((encodedInstr[6:0] == 32'h00000063) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) INSTR_BLT
+	elseif ((encodedInstr[6:0] == 32'h00000063) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) INSTR_BGE
+	elseif ((encodedInstr[6:0] == 32'h00000063) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) INSTR_BLTU
+	elseif ((encodedInstr[6:0] == 32'h00000063) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) INSTR_BGEU
+	elseif  (encodedInstr[6:0] == 32'h00000063) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000003) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) INSTR_LB
+	elseif ((encodedInstr[6:0] == 32'h00000003) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) INSTR_LH
+	elseif ((encodedInstr[6:0] == 32'h00000003) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) INSTR_LW
+	elseif ((encodedInstr[6:0] == 32'h00000003) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) INSTR_LBU
+	elseif ((encodedInstr[6:0] == 32'h00000003) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) INSTR_LHU
+	elseif  (encodedInstr[6:0] == 32'h00000003) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000023) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) INSTR_SB
+	elseif ((encodedInstr[6:0] == 32'h00000023) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) INSTR_SH
+	elseif ((encodedInstr[6:0] == 32'h00000023) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) INSTR_SW
+	elseif  (encodedInstr[6:0] == 32'h00000023) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) INSTR_ADDI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) INSTR_SLLI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) INSTR_SLTI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000003)) INSTR_SLTIU
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) INSTR_XORI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000000)) INSTR_SRLI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000020)) INSTR_SRAI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) INSTR_ORI
+	elseif ((encodedInstr[6:0] == 32'h00000013) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) INSTR_ANDI
+	elseif  (encodedInstr[6:0] == 32'h00000013) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000)) INSTR_ADD
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000020)) INSTR_SUB
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) INSTR_SLL
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) INSTR_SLT
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000003)) INSTR_SLTU
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) INSTR_XOR
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000000)) INSTR_SRL
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000020)) INSTR_SRA
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) INSTR_OR
+	elseif ((encodedInstr[6:0] == 32'h00000033) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) INSTR_AND
+	elseif  (encodedInstr[6:0] == 32'h00000033) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h0000000F) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr & 32'hF00F8F80) == 32'h00000000)) INSTR_FENCE
+	elseif ((encodedInstr[6:0] == 32'h0000000F) && ((encodedInstr >> 12)[2:0] == 32'h00000001) && ((encodedInstr & 32'hFFFF8F80) == 32'h00000000)) INSTR_FENCEI
+	elseif  (encodedInstr[6:0] == 32'h0000000F) INSTR_UNKNOWN
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000) && ((encodedInstr >> 20)[4:0] == 32'h00000000) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) INSTR_ECALL
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000) && ((encodedInstr >> 20)[4:0] == 32'h00000001) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) INSTR_EBREAK
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) INSTR_CSRRW
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) INSTR_CSRRS
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000003)) INSTR_CSRRC
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) INSTR_CSRRWI
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) INSTR_CSRRSI
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) INSTR_CSRRCI
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000) && ((encodedInstr >> 20)[4:0] == 32'h00000002) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) INSTR_URET
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000008) && ((encodedInstr >> 20)[4:0] == 32'h00000002) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) INSTR_SRET
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000018) && ((encodedInstr >> 20)[4:0] == 32'h00000002) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) INSTR_MRET
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000008) && ((encodedInstr >> 20)[4:0] == 32'h00000005) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) INSTR_WFI
+	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000009) && ((encodedInstr >>  7)[4:0] == 32'h00000000)) INSTR_SFENCEVMA
+	elseif  (encodedInstr[6:0] == 32'h00000073) INSTR_UNKNOWN
+	else INSTR_UNKNOWN
+endif
+end macro; 
+
+/*
+macro ALUFunc_t getALUFunc(Instr_t instr) := 
+	if ((instr == INSTR_ADD) || (instr == INSTR_ADDI)) ALUF_ADD
+	elseif (instr == INSTR_SUB) ALUF_SUB
+	elseif ((instr == INSTR_SLL) || (instr == INSTR_SLLI)) ALUF_SLL
+	elseif ((instr == INSTR_SLT) || (instr == INSTR_SLTI)) ALUF_SLT
+	elseif ((instr == INSTR_SLTU) || (instr == INSTR_SLTIU)) ALUF_SLTU
+	elseif ((instr == INSTR_XOR) || (instr == INSTR_XORI)) ALUF_XOR
+	elseif ((instr == INSTR_SRL) || (instr == INSTR_SRLI)) ALUF_SRL
+	elseif ((instr == INSTR_SRA) || (instr == INSTR_SRAI)) ALUF_SRA
+	elseif ((instr == INSTR_OR) || (instr == INSTR_ORI)) ALUF_OR
+	elseif ((instr == INSTR_AND) || (instr == INSTR_ANDI)) ALUF_AND
+	elseif (((((instr == INSTR_LB) || (instr == INSTR_LH)) || (instr == INSTR_LW)) || (instr == INSTR_LBU)) || (instr == INSTR_LHU)) ALUF_ADD
+	elseif ((instr == INSTR_JALR) || (instr == INSTR_JAL)) ALUF_X
+	elseif ((instr == INSTR_BEQ) || (instr == INSTR_BNE)) ALUF_SUB
+	elseif ((instr == INSTR_BLT) || (instr == INSTR_BGE)) ALUF_SLT
+	elseif ((instr == INSTR_BLTU) || (instr == INSTR_BGEU)) ALUF_SLTU
+	elseif (((instr == INSTR_SB) || (instr == INSTR_SH)) || (instr == INSTR_SW)) ALUF_ADD
+	elseif (instr == INSTR_AUIPC) ALUF_ADD
+	elseif (instr == INSTR_LUI) ALUF_COPY1
+	else ALUF_X
+	endif
+end macro;
+
+macro unsigned getALUResult(ALUFunc_t func; unsigned op1; unsigned op2) := 
+	if (func == ALUF_ADD) 										(op1 + op2)[31:0]
+	elseif (func == ALUF_SUB) 									(op1 - op2)[31:0]
+	elseif (func == ALUF_AND) 									(op1 & op2)
+	elseif (func == ALUF_OR) 									(op1 | op2)
+	elseif (func == ALUF_XOR) 									(op1 ^ op2)
+	elseif ((func == ALUF_SLT) && (signed(op1) < signed(op2))) 	1
+	elseif ((func == ALUF_SLTU) && (op1 < op2)) 				1
+	elseif (func == ALUF_SLL) 									(op1 << op2[4:0])
+	elseif (func == ALUF_SRA) 									(signed(op1) >> signed(op2[4:0]))
+	elseif (func == ALUF_SRL) 									(op1 >> op2[4:0])
+	elseif (func == ALUF_COPY1) 								op1
+	else 														0
+	endif
+end macro;
+*/
