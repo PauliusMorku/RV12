@@ -1,16 +1,16 @@
-macro unsigned examination_window := 20 end macro;
+macro unsigned examination_window := 25 end macro;
 
 macro logic m_IF_rx := (c/if_unit/id_stall == 0) end macro;
-macro logic m_ID_rx := (c/id_unit/if_bubble == 0) end macro;
-macro logic m_EX_rx := (c/ex_units/id_bubble == 0) end macro;
-macro logic m_ME_rx := (c/mem_unit/ex_bubble == 0) end macro;
-macro logic m_WB_rx := (1) end macro;
+macro logic m_ID_rx := (/*(c/id_unit/if_bubble == 0) && */(c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
+macro logic m_EX_rx := (/*(c/ex_units/id_bubble == 0) && */(c/ex_units/ex_stall == 0)) end macro;
+macro logic m_ME_rx := ((c/mem_unit/wb_stall == 0)/* || (prev(m_EX_rx) && (c/ex_units/ex_stall == 0))*/) end macro; // either no bubble or instruction finished in EX stage (if it stalls then it is still computing)
+macro logic m_WB_rx := ((c/wb_unit/wb_stall_o == 0)/* || prev(m_ME_rx)*/) end macro;
 
-macro logic m_IF_tx := (1) end macro;
-macro logic m_ID_tx := (1) end macro;
-macro logic m_EX_tx := (1) end macro;
-macro logic m_ME_tx := (1) end macro;
-macro logic m_WB_tx := (1) end macro;
+macro logic m_IF_tx := m_ID_rx end macro;
+macro logic m_ID_tx := m_EX_rx end macro;
+macro logic m_EX_tx := m_ME_rx end macro;
+macro logic m_ME_tx := m_WB_rx end macro;
+macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 
 macro logic m_IF_flush := 0 end macro;
 macro logic m_ID_flush := 0 end macro;
@@ -68,14 +68,19 @@ constraint no_reset :=
 	c/rstn == 1;
 end constraint;
 
-constraint no_dbg_stall :=
-	c/dbg_stall == 0;
+constraint c_no_debug :=
+	c/dbg_stall == 0 &&
+	c/du_flush == 0 &&
+	c/du_stall == 0 &&
+	c/du_stall_dly == 0;
 end constraint;
 
-constraint no_flush :=
-	((c/bu_flush == 0) || prev(c/rstn == 0)) &&
-	((c/st_flush == 0) || prev(c/rstn == 0)) &&
-	c/du_flush == 0;
+constraint c_no_st_flush :=
+	((c/st_flush == 0) || prev(c/rstn == 0));
+end constraint;
+
+constraint c_no_bu_flush :=
+	((c/bu_flush == 0) || prev(c/rstn == 0));
 end constraint;
 
 constraint no_if_stall_nxt_pc :=
@@ -102,8 +107,19 @@ constraint dmem_ready :=
 	dmem_ack == 1;
 end constraint;
 
-constraint if_parcel_valid2 :=
+constraint c_dmem_fairness :=
+	exists i in 0..3:
+		next(dmem_ack,i) == 1;
+	end exists;
+end constraint;
+
+constraint c_if_parcel_valid :=
 	((c/if_unit/pd_bubble == 0) || prev(c/rstn == 0) || prev(c/rstn == 0, 2)); 
+end constraint;
+
+constraint c_if_parcel_valid2 :=
+	(c/if_unit/if_parcel_misaligned == 0) &&
+	(c/if_unit/if_parcel_page_fault == 0);
 end constraint;
 
 constraint no_exception :=
@@ -148,7 +164,7 @@ prove:
 end property;
 
 property test;
-dependencies: no_reset, no_if_stall_nxt_pc, no_dbg_stall, no_flush, no_exception, dmem_ready, if_parcel_valid2;
+dependencies: no_reset, no_if_stall_nxt_pc, c_no_debug, c_dmem_fairness, no_exception, c_if_parcel_valid2;
 for timepoints:
 	t1_IF_rx = t,
 	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
@@ -205,6 +221,20 @@ freeze:
 	at_t2_ME_flush = m_ME_flush@t2_ME_flush,
 	at_t2_WB_flush = m_WB_flush@t2_WB_flush,
 
+	at_t2_IF_tx_instr = c/if_unit/if_instr@t2_IF_tx,
+	at_t2_ID_tx_instr = c/id_unit/id_instr@t2_ID_tx,
+	at_t2_EX_tx_instr = c/ex_units/ex_instr@t2_EX_tx,
+	at_t2_ME_tx_instr = c/mem_unit/mem_instr@t2_ME_tx,
+	at_t2_WB_tx_instr = c/wb_unit/wb_instr_o@t2_WB_tx,
+
+	at_t2_IF_tx_pc = c/if_unit/if_pc@t2_IF_tx,
+	at_t2_ID_tx_pc = c/id_unit/id_pc@t2_ID_tx,
+	at_t2_EX_tx_pc = c/ex_units/ex_pc@t2_EX_tx,
+	at_t2_ME_tx_pc = c/mem_unit/mem_pc@t2_ME_tx,
+	at_t2_WB_tx_pc = c/wb_unit/wb_pc_o@t2_WB_tx,
+
+
+
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
 assume:
@@ -227,6 +257,8 @@ assume:
 	at t: WB_tcnt == 0;
 	during[t_first,t_last]: WB_tcnt_inc == m_WB_rx;
 
+
+	at t2_ID_rx: c/id_unit/bu_flush == 1;
 	//during[t_first,t_last]: instr_filter2(unsigned(c/if_instr)) == true;
 /*
 	// Detect token flushing
@@ -239,6 +271,17 @@ assume:
 */
 prove:
 	true;
+
+	at t: at_t2_IF_tx_instr == at_t2_ID_tx_instr;
+	at t: at_t2_ID_tx_instr == at_t2_EX_tx_instr;
+	at t: at_t2_EX_tx_instr == at_t2_ME_tx_instr;
+	at t: at_t2_ME_tx_instr == at_t2_WB_tx_instr;
+
+	/*at t2_ID_tx: c/id_unit/id_pc == at_t2_IF_tx_pc;*/
+	at t2_EX_tx: at_t2_EX_tx_pc == at_t2_ID_tx_pc;
+	at t2_ME_tx: at_t2_ME_tx_pc == at_t2_EX_tx_pc;
+	at t2_WB_tx: at_t2_WB_tx_pc == at_t2_ME_tx_pc;
+
 
 	// Prove that events take place
 	at t1_IF_tx: m_IF_tx && (IF_tcnt == 1);
