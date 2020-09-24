@@ -176,6 +176,12 @@ for timepoints:
 	t2_ME_rx = t + 0..examination_window waits_for complete next(ME_tcnt == 2),
 	t2_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 2),
 
+	t3_IF_rx = t + 0..examination_window waits_for complete next(IF_tcnt == 3),
+	t3_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 3),
+	t3_EX_rx = t + 0..examination_window waits_for complete next(EX_tcnt == 3),
+	t3_ME_rx = t + 0..examination_window waits_for complete next(ME_tcnt == 3),
+	t3_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 3),
+
 
 	t1_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 1)) || (next(IF_tcnt) > 1)),
 	t1_ID_tx = t + 1..examination_window waits_for complete ((m_ID_tx && (ID_tcnt == 1)) || (next(ID_tcnt) > 1)),
@@ -189,6 +195,12 @@ for timepoints:
 	t2_ME_tx = t + 1..examination_window waits_for complete ((m_ME_tx && (ME_tcnt == 2)) || (next(ME_tcnt) > 2)),
 	t2_WB_tx = t + 1..examination_window waits_for complete ((m_WB_tx && (WB_tcnt == 2)) || (next(WB_tcnt) > 2)),
 
+	t3_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 3)) || (next(IF_tcnt) > 3)),
+	t3_ID_tx = t + 1..examination_window waits_for complete ((m_ID_tx && (ID_tcnt == 3)) || (next(ID_tcnt) > 3)),
+	t3_EX_tx = t + 1..examination_window waits_for complete ((m_EX_tx && (EX_tcnt == 3)) || (next(EX_tcnt) > 3)),
+	t3_ME_tx = t + 1..examination_window waits_for complete ((m_ME_tx && (ME_tcnt == 3)) || (next(ME_tcnt) > 3)),
+	t3_WB_tx = t + 1..examination_window waits_for complete ((m_WB_tx && (WB_tcnt == 3)) || (next(WB_tcnt) > 3)),
+
 	// Detect flushing cases
 	t1_IF_flush = t + 0..examination_window waits_for complete (m_IF_flush && (IF_tcnt == 1)),
 	t1_ID_flush = t + 0..examination_window waits_for complete (m_ID_flush && (ID_tcnt == 1)),
@@ -201,6 +213,12 @@ for timepoints:
 	t2_EX_flush = t + 0..examination_window waits_for complete (m_EX_flush && (EX_tcnt == 2)),
 	t2_ME_flush = t + 0..examination_window waits_for complete (m_ME_flush && (ME_tcnt == 2)),
 	t2_WB_flush = t + 0..examination_window waits_for complete (m_WB_flush && (WB_tcnt == 2)),
+
+	t3_IF_flush = t + 0..examination_window waits_for complete (m_IF_flush && (IF_tcnt == 3)),
+	t3_ID_flush = t + 0..examination_window waits_for complete (m_ID_flush && (ID_tcnt == 3)),
+	t3_EX_flush = t + 0..examination_window waits_for complete (m_EX_flush && (EX_tcnt == 3)),
+	t3_ME_flush = t + 0..examination_window waits_for complete (m_ME_flush && (ME_tcnt == 3)),
+	t3_WB_flush = t + 0..examination_window waits_for complete (m_WB_flush && (WB_tcnt == 3)),
 
 
 	t_dummy = t; // last dummy line (for the semicolon)
@@ -218,6 +236,12 @@ freeze:
 	at_t2_EX_flush = m_EX_flush@t2_EX_flush,
 	at_t2_ME_flush = m_ME_flush@t2_ME_flush,
 	at_t2_WB_flush = m_WB_flush@t2_WB_flush,
+
+	at_t3_IF_flush = m_IF_flush@t3_IF_flush,
+	at_t3_ID_flush = m_ID_flush@t3_ID_flush,
+	at_t3_EX_flush = m_EX_flush@t3_EX_flush,
+	at_t3_ME_flush = m_ME_flush@t3_ME_flush,
+	at_t3_WB_flush = m_WB_flush@t3_WB_flush,
 
 	at_t2_IF_tx_instr = c/if_unit/if_instr@t2_IF_tx,
 	at_t2_ID_tx_instr = c/id_unit/id_instr@t2_ID_tx,
@@ -262,10 +286,12 @@ assume:
 	// Detect token flushing
 	during[t_first,t_last]: t1_flush == (at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush);
 	during[t_first,t_last]: t2_flush == (at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush);
+	during[t_first,t_last]: t3_flush == (at_t3_IF_flush || at_t3_ID_flush || at_t3_EX_flush || at_t3_ME_flush || at_t3_WB_flush);
 
 	// Make sure that property does not start at flushing and no flushing occur withing the window
 	at t: t1_flush == 0;
 	at t: t2_flush == 1;
+	at t: t3_flush == 0;
 
 prove:
 	true;
