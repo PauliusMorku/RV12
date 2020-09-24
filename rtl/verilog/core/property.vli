@@ -1,6 +1,6 @@
 macro unsigned examination_window := 25 end macro;
 
-macro logic m_IF_rx := (c/if_unit/id_stall == 0) end macro;
+macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;// && (next(c/if_unit/id_stall) == 0)) end macro;
 macro logic m_ID_rx := (/*(c/id_unit/if_bubble == 0) && */(c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
 macro logic m_EX_rx := (/*(c/ex_units/id_bubble == 0) && */(c/ex_units/ex_stall == 0)) end macro;
 macro logic m_ME_rx := ((c/mem_unit/wb_stall == 0)/* || (prev(m_EX_rx) && (c/ex_units/ex_stall == 0))*/) end macro; // either no bubble or instruction finished in EX stage (if it stalls then it is still computing)
@@ -13,8 +13,8 @@ macro logic m_ME_tx := m_WB_rx end macro;
 macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 
 macro logic m_IF_flush := 0 end macro;
-macro logic m_ID_flush := 0 end macro;
-macro logic m_EX_flush := 0 end macro;
+macro logic m_ID_flush := (c/ex_units/bu_flush == 1) end macro;
+macro logic m_EX_flush := (c/ex_units/bu_flush == 1) end macro;
 macro logic m_ME_flush := 0 end macro;
 macro logic m_WB_flush := 0 end macro;
 
@@ -122,6 +122,12 @@ constraint c_if_parcel_valid2 :=
 	(c/if_unit/if_parcel_page_fault == 0);
 end constraint;
 
+constraint c_if_parcel_valid_fairness :=
+	exists i in 0..4:
+		next(c/if_unit/pd_bubble,i) == 0;
+	end exists;
+end constraint;
+
 constraint no_exception :=
 	c/if_exception == 0 &&
 	c/ex_exception == 0 &&
@@ -136,14 +142,6 @@ constraint no_id_hazard :=
 	((c/id_unit/if_src1 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)) &&
 	((c/id_unit/if_src2 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)));
 end constraint;
-
-/*
-macro boolean id_in_notify_m := ((c/id_stall == 0) || !(c/ex_stall == 0)); end macro;
-macro boolean id_in_sync_m := (c/if_bubble == 0); end macro;
-
-macro boolean id_out_notify_m := (c/id_bubble == 0); end macro;
-macro boolean id_out_sync_m := (c/ex_stall == 0); end macro;
-*/
 
 property reset;
 dependencies:
@@ -164,7 +162,7 @@ prove:
 end property;
 
 property test;
-dependencies: no_reset, no_if_stall_nxt_pc, c_no_debug, c_dmem_fairness, no_exception, c_if_parcel_valid2;
+dependencies: no_reset, no_if_stall_nxt_pc, c_no_debug, c_dmem_fairness, no_exception, c_if_parcel_valid_fairness, c_no_st_flush;
 for timepoints:
 	t1_IF_rx = t,
 	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
@@ -247,7 +245,7 @@ assume:
 
 	// Connect token counters
 	at t: IF_tcnt == 0;
-	during[t_first,t_last]: IF_tcnt_inc == m_IF_rx;
+	during[t_first,t+examination_window]: IF_tcnt_inc == m_IF_rx;
 	at t: ID_tcnt == 0;
 	during[t_first,t_last]: ID_tcnt_inc == m_ID_rx;
 	at t: EX_tcnt == 0;
@@ -258,17 +256,17 @@ assume:
 	during[t_first,t_last]: WB_tcnt_inc == m_WB_rx;
 
 
-	at t2_ID_rx: c/id_unit/bu_flush == 1;
+	//at t2_ID_rx: c/id_unit/bu_flush == 1;
 	//during[t_first,t_last]: instr_filter2(unsigned(c/if_instr)) == true;
-/*
+
 	// Detect token flushing
-	during[t_first,t_last]: t1_flush == at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush;
-	during[t_first,t_last]: t2_flush == at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush;
+	during[t_first,t_last]: t1_flush == (at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush);
+	during[t_first,t_last]: t2_flush == (at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush);
 
 	// Make sure that property does not start at flushing and no flushing occur withing the window
 	at t: t1_flush == 0;
-	at t: t2_flush == 0;
-*/
+	at t: t2_flush == 1;
+
 prove:
 	true;
 
@@ -277,7 +275,7 @@ prove:
 	at t: at_t2_EX_tx_instr == at_t2_ME_tx_instr;
 	at t: at_t2_ME_tx_instr == at_t2_WB_tx_instr;
 
-	/*at t2_ID_tx: c/id_unit/id_pc == at_t2_IF_tx_pc;*/
+	at t2_ID_tx: c/id_unit/id_pc == at_t2_IF_tx_pc;
 	at t2_EX_tx: at_t2_EX_tx_pc == at_t2_ID_tx_pc;
 	at t2_ME_tx: at_t2_ME_tx_pc == at_t2_EX_tx_pc;
 	at t2_WB_tx: at_t2_WB_tx_pc == at_t2_ME_tx_pc;
