@@ -18,6 +18,18 @@ macro logic m_EX_flush := (c/ex_units/bu_flush == 1) end macro;
 macro logic m_ME_flush := 0 end macro;
 macro logic m_WB_flush := 0 end macro;
 
+macro unsigned IF_instr := c/if_unit/if_instr end macro;
+macro unsigned ID_instr := c/id_unit/id_instr end macro;
+macro unsigned EX_instr := c/ex_units/ex_instr end macro;
+macro unsigned ME_instr := c/mem_unit/mem_instr end macro;
+macro unsigned WB_instr := c/wb_unit/wb_instr_o end macro;
+
+macro unsigned IF_pc := c/if_unit/if_pc end macro;
+macro unsigned ID_pc := c/id_unit/id_pc end macro;
+macro unsigned EX_pc := c/ex_units/ex_pc end macro;
+macro unsigned ME_pc := c/mem_unit/mem_pc end macro;
+macro unsigned WB_pc := c/wb_unit/wb_pc_o end macro;
+
 // Instruction filters are used to constrain the instructions that are read from the memory (to avoid illegal instructions and reduce computation complexity)
 macro bit instr_filter1(unsigned encodedInstr) := 
 	/*(getOpcode(encodedInstr) == OPCODE_I_L) ||
@@ -243,17 +255,17 @@ freeze:
 	at_t3_ME_flush = m_ME_flush@t3_ME_flush,
 	at_t3_WB_flush = m_WB_flush@t3_WB_flush,
 
-	at_t2_IF_tx_instr = c/if_unit/if_instr@t2_IF_tx,
-	at_t2_ID_tx_instr = c/id_unit/id_instr@t2_ID_tx,
-	at_t2_EX_tx_instr = c/ex_units/ex_instr@t2_EX_tx,
-	at_t2_ME_tx_instr = c/mem_unit/mem_instr@t2_ME_tx,
-	at_t2_WB_tx_instr = c/wb_unit/wb_instr_o@t2_WB_tx,
+	at_t2_IF_tx_instr = IF_instr@t2_IF_tx,
+	at_t2_ID_tx_instr = ID_instr@t2_ID_tx,
+	at_t2_EX_tx_instr = EX_instr@t2_EX_tx,
+	at_t2_ME_tx_instr = ME_instr@t2_ME_tx,
+	at_t2_WB_tx_instr = WB_instr@t2_WB_tx,
 
-	at_t2_IF_tx_pc = c/if_unit/if_pc@t2_IF_tx,
-	at_t2_ID_tx_pc = c/id_unit/id_pc@t2_ID_tx,
-	at_t2_EX_tx_pc = c/ex_units/ex_pc@t2_EX_tx,
-	at_t2_ME_tx_pc = c/mem_unit/mem_pc@t2_ME_tx,
-	at_t2_WB_tx_pc = c/wb_unit/wb_pc_o@t2_WB_tx,
+	at_t2_IF_tx_pc = IF_pc@t2_IF_tx,
+	at_t2_ID_tx_pc = ID_pc@t2_ID_tx,
+	at_t2_EX_tx_pc = EX_pc@t2_EX_tx,
+	at_t2_ME_tx_pc = ME_pc@t2_ME_tx,
+	at_t2_WB_tx_pc = WB_pc@t2_WB_tx,
 
 
 
@@ -290,21 +302,21 @@ assume:
 
 	// Make sure that property does not start at flushing and no flushing occur withing the window
 	at t: t1_flush == 0;
-	at t: t2_flush == 1;
+	at t: t2_flush == 0;
 	at t: t3_flush == 0;
 
 prove:
 	true;
 
-	at t: at_t2_IF_tx_instr == at_t2_ID_tx_instr;
-	at t: at_t2_ID_tx_instr == at_t2_EX_tx_instr;
-	at t: at_t2_EX_tx_instr == at_t2_ME_tx_instr;
-	at t: at_t2_ME_tx_instr == at_t2_WB_tx_instr;
+	at t2_ID_tx: ID_instr == at_t2_IF_tx_instr;
+	at t2_EX_tx: EX_instr == at_t2_ID_tx_instr;
+	at t2_ME_tx: ME_instr == at_t2_EX_tx_instr;
+	at t2_WB_tx: WB_instr == at_t2_ME_tx_instr;
 
-	at t2_ID_tx: c/id_unit/id_pc == at_t2_IF_tx_pc;
-	at t2_EX_tx: at_t2_EX_tx_pc == at_t2_ID_tx_pc;
-	at t2_ME_tx: at_t2_ME_tx_pc == at_t2_EX_tx_pc;
-	at t2_WB_tx: at_t2_WB_tx_pc == at_t2_ME_tx_pc;
+	at t2_ID_tx: ID_pc == at_t2_IF_tx_pc;
+	at t2_EX_tx: EX_pc == at_t2_ID_tx_pc;
+	at t2_ME_tx: ME_pc == at_t2_EX_tx_pc;
+	at t2_WB_tx: WB_pc == at_t2_ME_tx_pc;
 
 
 	// Prove that events take place

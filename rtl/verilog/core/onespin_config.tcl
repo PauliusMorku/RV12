@@ -1,19 +1,24 @@
 ################################################################################################
 # OneSpin script directory
 ################################################################################################
-set ONESPIN_SCRIPT_DIR /home/pmorku/workspace/onespin_utils/scripts
+set ONESPIN_SCRIPT_DIR $::env(ONESPIN_SCRIPT_DIR)
 
 ################################################################################################
 # Common root directory for all the files involved in the experiment
 # NOTE: when using "make_copy 1" option all referenced files must originate from this directory
 # (files can't be referenced using "../" operator)
 ################################################################################################
-set COMMON_ROOT_DIR /home/pmorku/workspace
+set COMMON_ROOT_DIR $::env(WORKSPACE_DIR)
 
 ################################################################################################
 # Comment for the experiment (will appear in the OneSpin log files and the generated report)
 ################################################################################################
 set comment "initial attempt to load RV12"
+
+################################################################################################
+# Generate report from all experiments in the result directory (1 - enable, 0 - disable)
+################################################################################################
+set generate_report 1
 
 ################################################################################################
 # Arguments for the property check in OneSpin (can be used to configure engines, etc.)
