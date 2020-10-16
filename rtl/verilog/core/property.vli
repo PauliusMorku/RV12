@@ -99,6 +99,12 @@ constraint no_if_stall_nxt_pc :=
 	c/if_stall_nxt_pc == 0;
 end constraint;
 
+constraint c_if_stall_nxt_pc_fairness :=
+	exists i in 0..3:
+		next(c/if_stall_nxt_pc,i) == 0;
+	end exists;
+end constraint;
+
 constraint if_nop :=
 	c/if_instr == 32'h00000013;
 end constraint;
@@ -164,17 +170,8 @@ prove:
 	at t: true;
 end property;
 
-property sample;
-dependencies:
-	no_reset;
-assume:
-	at t: true;
-prove:
-	at t+1: true;
-end property;
-
 property test;
-dependencies: no_reset, no_if_stall_nxt_pc, c_no_debug, c_dmem_fairness, no_exception, c_if_parcel_valid_fairness, c_no_st_flush;
+dependencies: no_reset, c_if_stall_nxt_pc_fairness, c_no_debug, c_dmem_fairness, no_exception, c_if_parcel_valid_fairness, c_no_st_flush;
 for timepoints:
 	t1_IF_rx = t,
 	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
@@ -303,7 +300,7 @@ assume:
 	// Make sure that property does not start at flushing and no flushing occur withing the window
 	at t: t1_flush == 0;
 	at t: t2_flush == 0;
-	at t: t3_flush == 0;
+	//at t: t3_flush == 0;
 
 prove:
 	true;
