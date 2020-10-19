@@ -201,11 +201,30 @@ prove:
 	at t1_WB_rx: next(WB_tcnt == 1);
 end property;
 
+
+
+
+
 property test;
 dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
 for timepoints:
-	t1_IF_rx = t,
-	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+	t1_IF_rx = t,											// ID rx new token  || IF stage tx a bubble (!IF_token)         || IF stage rx a new token without tx the old one
+	//t1_ID_rx = t + 0..examination_window waits_for complete (next(ID_tcnt == 1) || (m_IF_tx && (IF_tcnt == 1) && !IF_token)), //|| (next(IF_tcnt) > 1)),
+
+	t1_ID_rx_find = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+
+
+	t1_ID_rx = t + 0..examination_window waits_for complete ((next(ID_tcnt == 1) && t1_ID_rx_exist) || (m_IF_tx && (IF_tcnt == 1) && !t1_ID_rx_exist)) ,
+
+
+
+	t0_ID_tx_find = t + 0..examination_window+1 waits_for complete (m_ID_tx && (ID_tcnt == 0)),
+
+	t0_ID_tx = t + 0..examination_window waits_for complete (t0_ID_tx_wait == false),
+
+	t1_ID_rx_final = max_timepoint(t1_ID_rx, t0_ID_tx),
+
+
 	t1_EX_rx = t + 0..examination_window waits_for complete next(EX_tcnt == 1),
 	t1_ME_rx = t + 0..examination_window waits_for complete next(ME_tcnt == 1),
 	t1_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 1),
@@ -307,6 +326,10 @@ freeze:
 	at_t2_ME_token = IF_token@t2_IF_rx,
 	at_t2_WB_token = IF_token@t2_IF_rx,
 
+	at_t0_ID_tx_exist = within_window@t0_ID_tx_find,
+
+	at_t1_ID_rx_exist = within_window@t1_ID_rx_find,
+
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
 assume:
@@ -337,6 +360,21 @@ assume:
 	during[t,t+examination_window]: t1_flush == (at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush);
 	during[t,t+examination_window]: t2_flush == (at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush);
 	//during[t,t+examination_window]: t3_flush == (at_t3_IF_flush || at_t3_ID_flush || at_t3_EX_flush || at_t3_ME_flush || at_t3_WB_flush);
+
+
+	// Helper variable to determine if event occured within examination_window
+	during[t,t+examination_window]: within_window == true;
+	at t+examination_window+1: within_window == false;
+
+
+
+
+	during[t,t0_ID_tx_find]: t0_ID_tx_wait == at_t0_ID_tx_exist;
+	during[t0_ID_tx_find+1,t+examination_window]: t0_ID_tx_wait == false;
+
+	during[t,t+examination_window]: t1_ID_rx_exist == at_t1_ID_rx_exist;
+
+
 
 	// Make sure that property does not start at flushing and no flushing occur withing the window
 	at t: t1_flush == 0;
