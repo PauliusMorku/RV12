@@ -90,7 +90,16 @@ module top #(
   input                            WB_tcnt_inc,
   input                            t1_flush,
   input                            t2_flush,
-  input                            t3_flush
+  input                            t3_flush,
+  input                            within_window,
+  input                            t0_ID_tx_wait,
+  input                            t0_EX_tx_wait,
+  input                            t0_ME_tx_wait,
+  input                            t0_WB_tx_wait,
+  input                            t1_ID_rx_exist,
+  input                            t1_EX_rx_exist,
+  input                            t1_ME_rx_exist,
+  input                            t1_WB_rx_exist
 );
 
 
