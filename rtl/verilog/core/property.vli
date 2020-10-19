@@ -166,7 +166,7 @@ constraint no_id_hazard :=
 	((c/id_unit/if_src1 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)) &&
 	((c/id_unit/if_src2 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)));
 end constraint;
-
+/*
 property reset;
 dependencies:
 	c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
@@ -200,7 +200,7 @@ prove:
 	at t1_ME_rx: next(ME_tcnt == 1);
 	at t1_WB_rx: next(WB_tcnt == 1);
 end property;
-
+*/
 
 
 
@@ -208,21 +208,43 @@ end property;
 property test;
 dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
 for timepoints:
-	t1_IF_rx = t,											// ID rx new token  || IF stage tx a bubble (!IF_token)         || IF stage rx a new token without tx the old one
+	t1_IF_rx = t,
+	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+												// ID rx new token  || IF stage tx a bubble (!IF_token)         || IF stage rx a new token without tx the old one
 	//t1_ID_rx = t + 0..examination_window waits_for complete (next(ID_tcnt == 1) || (m_IF_tx && (IF_tcnt == 1) && !IF_token)), //|| (next(IF_tcnt) > 1)),
 
 	t1_ID_rx_find = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
 
 
-	t1_ID_rx = t + 0..examination_window waits_for complete ((next(ID_tcnt == 1) && t1_ID_rx_exist) || (m_IF_tx && (IF_tcnt == 1) && !t1_ID_rx_exist)) ,
+	//t1_ID_rx = t + 0..examination_window waits_for complete ((next(ID_tcnt == 1) && t1_ID_rx_exist) || (m_IF_tx && (IF_tcnt == 1) && !t1_ID_rx_exist)) ,
 
 
 
 	t0_ID_tx_find = t + 0..examination_window+1 waits_for complete (m_ID_tx && (ID_tcnt == 0)),
+	//t0_ID_tx = t + 0..examination_window waits_for complete (t0_ID_tx_wait == false),
 
-	t0_ID_tx = t + 0..examination_window waits_for complete (t0_ID_tx_wait == false),
+	t0_EX_rx_find = t + 0..examination_window+1 waits_for complete (m_EX_rx && next(EX_tcnt == 0) && next(!t0_ID_tx_wait)),
+	//t0_EX_rx = t + 0..examination_window waits_for complete (t0_EX_rx_wait == false),
 
-	t1_ID_rx_final = max_timepoint(t1_ID_rx, t0_ID_tx),
+	t0_EX_tx_find = t + 0..examination_window+1 waits_for complete (m_EX_tx && (EX_tcnt == 0) && !t0_EX_rx_wait),
+	//t0_EX_tx = t + 0..examination_window waits_for complete (t0_EX_tx_wait == false),
+
+	t0_ME_rx_find = t + 0..examination_window+1 waits_for complete (m_ME_rx && next(ME_tcnt == 0) && next(!t0_EX_tx_wait)),
+	//t0_ME_rx = t + 0..examination_window waits_for complete (t0_ME_rx_wait == false),
+
+	t0_ME_tx_find = t + 0..examination_window+1 waits_for complete (m_ME_tx && (ME_tcnt == 0) && !t0_ME_rx_wait),
+	//t0_ME_tx = t + 0..examination_window waits_for complete (t0_ME_tx_wait == false),
+
+	t0_WB_rx_find = t + 0..examination_window+1 waits_for complete (m_WB_rx && next(WB_tcnt == 0) && next(!t0_ME_tx_wait)),
+	//t0_WB_rx = t + 0..examination_window waits_for complete (t0_WB_rx_wait == false),
+
+	t0_WB_tx_find = t + 0..examination_window+1 waits_for complete (m_WB_tx && (WB_tcnt == 0) && !t0_WB_rx_wait),
+	//t0_WB_tx = t + 0..examination_window waits_for complete (t0_WB_tx_wait == false),
+
+	//t1_ID_rx_final = max_timepoint(t1_ID_rx, t0_ID_tx),
+
+
+
 
 
 	t1_EX_rx = t + 0..examination_window waits_for complete next(EX_tcnt == 1),
@@ -327,6 +349,12 @@ freeze:
 	at_t2_WB_token = IF_token@t2_IF_rx,
 
 	at_t0_ID_tx_exist = within_window@t0_ID_tx_find,
+	at_t0_EX_rx_exist = within_window@t0_EX_rx_find,
+	at_t0_EX_tx_exist = within_window@t0_EX_tx_find,
+	at_t0_ME_rx_exist = within_window@t0_ME_rx_find,
+	at_t0_ME_tx_exist = within_window@t0_ME_tx_find,
+	at_t0_WB_rx_exist = within_window@t0_WB_rx_find,
+	at_t0_WB_tx_exist = within_window@t0_WB_tx_find,
 
 	at_t1_ID_rx_exist = within_window@t1_ID_rx_find,
 
@@ -353,9 +381,6 @@ assume:
 	during[t,t+examination_window]: WB_tcnt_inc == m_WB_rx;
 
 
-	//at t2_ID_rx: c/id_unit/bu_flush == 1;
-	//during[t_first,t_last]: instr_filter2(unsigned(c/if_instr)) == true;
-
 	// Detect token flushing
 	during[t,t+examination_window]: t1_flush == (at_t1_IF_flush || at_t1_ID_flush || at_t1_EX_flush || at_t1_ME_flush || at_t1_WB_flush);
 	during[t,t+examination_window]: t2_flush == (at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush);
@@ -368,12 +393,32 @@ assume:
 
 
 
-
 	during[t,t0_ID_tx_find]: t0_ID_tx_wait == at_t0_ID_tx_exist;
 	during[t0_ID_tx_find+1,t+examination_window]: t0_ID_tx_wait == false;
 
-	during[t,t+examination_window]: t1_ID_rx_exist == at_t1_ID_rx_exist;
+	during[t,t0_EX_rx_find]: t0_EX_rx_wait == at_t0_EX_rx_exist;
+	during[t0_EX_rx_find+1,t+examination_window]: t0_EX_rx_wait == false;
 
+	during[t,t0_EX_tx_find]: t0_EX_tx_wait == at_t0_EX_tx_exist;
+	during[t0_EX_tx_find+1,t+examination_window]: t0_EX_tx_wait == false;
+
+	during[t,t0_ME_rx_find]: t0_ME_rx_wait == at_t0_ME_rx_exist;
+	during[t0_ME_rx_find+1,t+examination_window]: t0_ME_rx_wait == false;	
+
+	during[t,t0_ME_tx_find]: t0_ME_tx_wait == at_t0_ME_tx_exist;
+	during[t0_ME_tx_find+1,t+examination_window]: t0_ME_tx_wait == false;
+
+	during[t,t0_WB_rx_find]: t0_WB_rx_wait == at_t0_WB_rx_exist;
+	during[t0_WB_rx_find+1,t+examination_window]: t0_WB_rx_wait == false;	
+
+	during[t,t0_WB_tx_find]: t0_WB_tx_wait == at_t0_WB_tx_exist;
+	during[t0_WB_tx_find+1,t+examination_window]: t0_WB_tx_wait == false;
+
+
+	within[t,t+examination_window]: t0_WB_tx_wait == true;
+
+
+	during[t,t+examination_window]: t1_ID_rx_exist == at_t1_ID_rx_exist;
 
 
 	// Make sure that property does not start at flushing and no flushing occur withing the window
