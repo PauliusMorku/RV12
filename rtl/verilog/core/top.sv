@@ -92,21 +92,35 @@ module top #(
   input                            t2_flush,
   input                            t3_flush,
   input                            within_window,
+  
   input                            t0_ID_tx_wait,
   input                            t0_EX_tx_wait,
   input                            t0_ME_tx_wait,
   input                            t0_WB_tx_wait,
+
   input                            t0_EX_rx_wait,
   input                            t0_ME_rx_wait,
   input                            t0_WB_rx_wait,
+
   input                            t1_ID_rx_wait,
   input                            t1_EX_rx_wait,
   input                            t1_ME_rx_wait,
   input                            t1_WB_rx_wait,
+
+  input                            t1_IF_tx_wait, 
+  input                            t1_ID_tx_wait,
+  input                            t1_EX_tx_wait,
+  input                            t1_ME_tx_wait,
+
   input                            t2_ID_rx_wait,
   input                            t2_EX_rx_wait,
   input                            t2_ME_rx_wait,
-  input                            t2_WB_rx_wait
+  input                            t2_WB_rx_wait,
+
+  input                            t2_IF_tx_wait,
+  input                            t2_ID_tx_wait,
+  input                            t2_EX_tx_wait,
+  input                            t2_ME_tx_wait
 );
 
 
