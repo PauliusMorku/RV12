@@ -214,19 +214,19 @@ for timepoints:
 	t0_ID_tx = t + 0..examination_window waits_for complete next(!t0_ID_tx_wait),
 
 	t0_EX_rx_find = t + 0..examination_window+1 waits_for complete (m_EX_rx && next(EX_tcnt == 0) && next(!t0_ID_tx_wait)),
-	t0_EX_rx = t + 0..examination_window waits_for complete next(!t0_EX_rx_wait),
+	//t0_EX_rx = t + 0..examination_window waits_for complete next(!t0_EX_rx_wait),
 
 	t0_EX_tx_find = t + 0..examination_window+1 waits_for complete (m_EX_tx && (EX_tcnt == 0) && !t0_EX_rx_wait),
 	t0_EX_tx = t + 0..examination_window waits_for complete next(!t0_EX_tx_wait),
 
 	t0_ME_rx_find = t + 0..examination_window+1 waits_for complete (m_ME_rx && next(ME_tcnt == 0) && next(!t0_EX_tx_wait)),
-	t0_ME_rx = t + 0..examination_window waits_for complete next(!t0_ME_rx_wait),
+	//t0_ME_rx = t + 0..examination_window waits_for complete next(!t0_ME_rx_wait),
 
 	t0_ME_tx_find = t + 0..examination_window+1 waits_for complete (m_ME_tx && (ME_tcnt == 0) && !t0_ME_rx_wait),
 	t0_ME_tx = t + 0..examination_window waits_for complete next(!t0_ME_tx_wait),
 
 	t0_WB_rx_find = t + 0..examination_window+1 waits_for complete (m_WB_rx && next(WB_tcnt == 0) && next(!t0_ME_tx_wait)),
-	t0_WB_rx = t + 0..examination_window waits_for complete next(!t0_WB_rx_wait),
+	//t0_WB_rx = t + 0..examination_window waits_for complete next(!t0_WB_rx_wait),
 
 	t0_WB_tx_find = t + 0..examination_window+1 waits_for complete (m_WB_tx && (WB_tcnt == 0) && !t0_WB_rx_wait),
 	t0_WB_tx = t + 0..examination_window waits_for complete next(!t0_WB_tx_wait),
@@ -237,14 +237,18 @@ for timepoints:
 												// ID rx new token  || IF stage tx a bubble (!IF_token)         || IF stage rx a new token without tx the old one
 	//t1_ID_rx = t + 0..examination_window waits_for complete (next(ID_tcnt == 1) || (m_IF_tx && (IF_tcnt == 1) && !IF_token)), //|| (next(IF_tcnt) > 1)),
 
-	//t1_ID_rx_find = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+	t1_ID_rx_find = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+	t1_EX_rx_find = t + 0..examination_window waits_for complete next(EX_tcnt == 1),
+	t1_ME_rx_find = t + 0..examination_window waits_for complete next(ME_tcnt == 1),
+	t1_WB_rx_find = t + 0..examination_window waits_for complete next(WB_tcnt == 1),
 
 
-	//t1_ID_rx = t + 0..examination_window waits_for complete ((next(ID_tcnt == 1) && t1_ID_rx_exist) || (m_IF_tx && (IF_tcnt == 1) && !t1_ID_rx_exist)) ,
+	//t1_ID_rx = t + 0..examination_window waits_for complete ((next(ID_tcnt == 1) && t1_ID_rx_exist) || (m_IF_tx && (IF_tcnt == 1) && !t1_ID_rx_exist)),
 
-
-
-
+t1_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 1)) || (next(IF_tcnt) > 1)),
+	t1_ID_rx_temp1 = t + 0..examination_window waits_for complete next(!t1_ID_rx_wait),
+	t1_ID_rx_temp2 = max_timepoint(t1_ID_rx_temp1, t0_ID_tx),
+	t1_ID_rx = max_timepoint(t1_ID_rx_temp2, t1_IF_tx),
 
 
 
@@ -254,7 +258,7 @@ for timepoints:
 
 
 	t1_IF_rx = t,
-	t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
+	//t1_ID_rx = t + 0..examination_window waits_for complete next(ID_tcnt == 1),
 	t1_EX_rx = t + 0..examination_window waits_for complete next(EX_tcnt == 1),
 	t1_ME_rx = t + 0..examination_window waits_for complete next(ME_tcnt == 1),
 	t1_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 1),
@@ -272,7 +276,7 @@ for timepoints:
 	t3_WB_rx = t + 0..examination_window waits_for complete next(WB_tcnt == 3),
 */
 
-	t1_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 1)) || (next(IF_tcnt) > 1)),
+	//t1_IF_tx = t + 1..examination_window waits_for complete ((m_IF_tx && (IF_tcnt == 1)) || (next(IF_tcnt) > 1)),
 	t1_ID_tx = t + 1..examination_window waits_for complete ((m_ID_tx && (ID_tcnt == 1)) || (next(ID_tcnt) > 1)),
 	t1_EX_tx = t + 1..examination_window waits_for complete ((m_EX_tx && (EX_tcnt == 1)) || (next(EX_tcnt) > 1)),
 	t1_ME_tx = t + 1..examination_window waits_for complete ((m_ME_tx && (ME_tcnt == 1)) || (next(ME_tcnt) > 1)),
@@ -364,7 +368,10 @@ freeze:
 	at_t0_WB_rx_exist = within_window@t0_WB_rx_find,
 	at_t0_WB_tx_exist = within_window@t0_WB_tx_find,
 
-	//at_t1_ID_rx_exist = within_window@t1_ID_rx_find,
+	at_t1_ID_rx_exist = within_window@t1_ID_rx_find,
+	at_t1_EX_rx_exist = within_window@t1_EX_rx_find,
+	at_t1_ME_rx_exist = within_window@t1_ME_rx_find,
+	at_t1_WB_rx_exist = within_window@t1_WB_rx_find,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
@@ -421,6 +428,20 @@ assume:
 
 	during[t,t0_WB_tx_find]: t0_WB_tx_wait == at_t0_WB_tx_exist;
 	during[t0_WB_tx_find+1,t+examination_window]: t0_WB_tx_wait == false;
+
+
+
+	during[t,t1_ID_rx_find]: t1_ID_rx_wait == at_t1_ID_rx_exist;
+	during[t1_ID_rx_find+1,t+examination_window]: t1_ID_rx_wait == false;
+
+	during[t,t1_EX_rx_find]: t1_EX_rx_wait == at_t1_EX_rx_exist;
+	during[t1_EX_rx_find+1,t+examination_window]: t1_EX_rx_wait == false;
+
+	during[t,t1_ME_rx_find]: t1_ME_rx_wait == at_t1_ME_rx_exist;
+	during[t1_ME_rx_find+1,t+examination_window]: t1_ME_rx_wait == false;	
+
+	during[t,t1_WB_rx_find]: t1_WB_rx_wait == at_t1_WB_rx_exist;
+	during[t1_WB_rx_find+1,t+examination_window]: t1_WB_rx_wait == false;	
 
 
 	//within[t,t+examination_window]: t0_WB_tx_wait == true;

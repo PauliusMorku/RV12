@@ -96,14 +96,17 @@ module top #(
   input                            t0_EX_tx_wait,
   input                            t0_ME_tx_wait,
   input                            t0_WB_tx_wait,
-  input                            t0_ID_rx_wait,
   input                            t0_EX_rx_wait,
   input                            t0_ME_rx_wait,
   input                            t0_WB_rx_wait,
-  input                            t1_ID_rx_exist,
-  input                            t1_EX_rx_exist,
-  input                            t1_ME_rx_exist,
-  input                            t1_WB_rx_exist
+  input                            t1_ID_rx_wait,
+  input                            t1_EX_rx_wait,
+  input                            t1_ME_rx_wait,
+  input                            t1_WB_rx_wait,
+  input                            t2_ID_rx_wait,
+  input                            t2_EX_rx_wait,
+  input                            t2_ME_rx_wait,
+  input                            t2_WB_rx_wait
 );
 
 
