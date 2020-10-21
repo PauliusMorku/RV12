@@ -415,6 +415,15 @@ freeze:
 	at_t1_WB_rx_exist = mg_t1_WB_rx@t1_WB_rx_find,
 	at_t1_WB_tx_exist = mg_t1_WB_tx@t1_WB_tx_find,
 
+	at_t2_IF_tx_exist = mg_t2_IF_tx@t2_IF_tx_find,
+	at_t2_ID_rx_exist = mg_t2_ID_rx@t2_ID_rx_find,
+	at_t2_ID_tx_exist = mg_t2_ID_tx@t2_ID_tx_find,
+	at_t2_EX_rx_exist = mg_t2_EX_rx@t2_EX_rx_find,
+	at_t2_EX_tx_exist = mg_t2_EX_tx@t2_EX_tx_find,
+	at_t2_ME_rx_exist = mg_t2_ME_rx@t2_ME_rx_find,
+	at_t2_ME_tx_exist = mg_t2_ME_tx@t2_ME_tx_find,
+	at_t2_WB_rx_exist = mg_t2_WB_rx@t2_WB_rx_find,
+
 	// Freeze signals indicating flushing cases
 	at_t1_IF_flush = mg_t1_IF_flush@t1_IF_flush,
 	at_t1_ID_flush = mg_t1_ID_flush@t1_ID_flush,
@@ -429,17 +438,17 @@ freeze:
 	at_t2_WB_flush = mg_t2_WB_flush@t2_WB_flush,
 
 
-	at_t2_IF_tx_instr = IF_instr@t2_IF_tx_right,
-	at_t2_ID_tx_instr = ID_instr@t2_ID_tx_right,
-	at_t2_EX_tx_instr = EX_instr@t2_EX_tx_right,
-	at_t2_ME_tx_instr = ME_instr@t2_ME_tx_right,
-	at_t2_WB_tx_instr = WB_instr@t2_WB_tx_right,
+	at_t2_IF_tx_instr = IF_instr@t2_IF_tx,
+	at_t2_ID_tx_instr = ID_instr@t2_ID_tx,
+	at_t2_EX_tx_instr = EX_instr@t2_EX_tx,
+	at_t2_ME_tx_instr = ME_instr@t2_ME_tx,
+	at_t2_WB_tx_instr = WB_instr@t2_WB_tx,
 
-	at_t2_IF_tx_pc = IF_pc@t2_IF_tx_right,
-	at_t2_ID_tx_pc = ID_pc@t2_ID_tx_right,
-	at_t2_EX_tx_pc = EX_pc@t2_EX_tx_right,
-	at_t2_ME_tx_pc = ME_pc@t2_ME_tx_right,
-	at_t2_WB_tx_pc = WB_pc@t2_WB_tx_right,
+	at_t2_IF_tx_pc = IF_pc@t2_IF_tx,
+	at_t2_ID_tx_pc = ID_pc@t2_ID_tx,
+	at_t2_EX_tx_pc = EX_pc@t2_EX_tx,
+	at_t2_ME_tx_pc = ME_pc@t2_ME_tx,
+	at_t2_WB_tx_pc = WB_pc@t2_WB_tx,
 /*
 	at_t1_IF_token = IF_token@t1_IF_rx,
 	at_t1_ID_token = IF_token@t1_IF_rx,
@@ -510,8 +519,6 @@ assume:
 	during[t0_WB_tx_find+1,t+examination_window]: t0_WB_tx_wait == false;
 
 
-
-
 	during[t,t1_IF_tx_find]: t1_IF_tx_wait == at_t1_IF_tx_exist;
 	during[t1_IF_tx_find+1,t+examination_window]: t1_IF_tx_wait == false;
 
@@ -537,7 +544,32 @@ assume:
 	during[t1_WB_rx_find+1,t+examination_window]: t1_WB_rx_wait == false;
 
 	during[t,t1_WB_tx_find]: t1_WB_tx_wait == at_t1_WB_tx_exist;
-	during[t1_WB_tx_find+1,t+examination_window]: t1_WB_tx_wait == false;	
+	during[t1_WB_tx_find+1,t+examination_window]: t1_WB_tx_wait == false;
+
+
+	during[t,t2_IF_tx_find]: t2_IF_tx_wait == at_t2_IF_tx_exist;
+	during[t2_IF_tx_find+1,t+examination_window]: t2_IF_tx_wait == false;
+
+	during[t,t2_ID_rx_find]: t2_ID_rx_wait == at_t2_ID_rx_exist;
+	during[t2_ID_rx_find+1,t+examination_window]: t2_ID_rx_wait == false;
+
+	during[t,t2_ID_tx_find]: t2_ID_tx_wait == at_t2_ID_tx_exist;
+	during[t2_ID_tx_find+1,t+examination_window]: t2_ID_tx_wait == false;
+
+	during[t,t2_EX_rx_find]: t2_EX_rx_wait == at_t2_EX_rx_exist;
+	during[t2_EX_rx_find+1,t+examination_window]: t2_EX_rx_wait == false;
+
+	during[t,t2_EX_tx_find]: t2_EX_tx_wait == at_t2_EX_tx_exist;
+	during[t2_EX_tx_find+1,t+examination_window]: t2_EX_tx_wait == false;
+
+	during[t,t2_ME_rx_find]: t2_ME_rx_wait == at_t2_ME_rx_exist;
+	during[t2_ME_rx_find+1,t+examination_window]: t2_ME_rx_wait == false;
+
+	during[t,t2_ME_tx_find]: t2_ME_tx_wait == at_t2_ME_tx_exist;
+	during[t2_ME_tx_find+1,t+examination_window]: t2_ME_tx_wait == false;	
+
+	during[t,t2_WB_rx_find]: t2_WB_rx_wait == at_t2_WB_rx_exist;
+	during[t2_WB_rx_find+1,t+examination_window]: t2_WB_rx_wait == false;
 
 
 
@@ -553,34 +585,34 @@ assume:
 prove:
 	true;
 
-	at t2_ID_tx_right: ID_instr == at_t2_IF_tx_instr;
-	at t2_EX_tx_right: EX_instr == at_t2_ID_tx_instr;
-	at t2_ME_tx_right: ME_instr == at_t2_EX_tx_instr;
-	at t2_WB_tx_right: WB_instr == at_t2_ME_tx_instr;
+	at t2_ID_tx: ID_instr == at_t2_IF_tx_instr;
+	at t2_EX_tx: EX_instr == at_t2_ID_tx_instr;
+	at t2_ME_tx: ME_instr == at_t2_EX_tx_instr;
+	at t2_WB_tx: WB_instr == at_t2_ME_tx_instr;
 
-	at t2_ID_tx_right: ID_pc == at_t2_IF_tx_pc;
-	at t2_EX_tx_right: EX_pc == at_t2_ID_tx_pc;
-	at t2_ME_tx_right: ME_pc == at_t2_EX_tx_pc;
-	at t2_WB_tx_right: WB_pc == at_t2_ME_tx_pc;
+	at t2_ID_tx: ID_pc == at_t2_IF_tx_pc;
+	at t2_EX_tx: EX_pc == at_t2_ID_tx_pc;
+	at t2_ME_tx: ME_pc == at_t2_EX_tx_pc;
+	at t2_WB_tx: WB_pc == at_t2_ME_tx_pc;
 
 
 	// Prove that events take place
-	at t1_IF_tx_right: mg_t1_IF_tx;
-	at t1_ID_tx_right: mg_t1_ID_tx;
-	at t1_EX_tx_right: mg_t1_EX_tx;
-	at t1_ME_tx_right: mg_t1_ME_tx;
-	at t1_WB_tx_right: mg_t1_WB_tx;
+	at t1_IF_tx: mg_t1_IF_tx;
+	at t1_ID_tx: mg_t1_ID_tx;
+	at t1_EX_tx: mg_t1_EX_tx;
+	at t1_ME_tx: mg_t1_ME_tx;
+	at t1_WB_tx: mg_t1_WB_tx;
 
 	// Prove right hook
-	at t2_IF_rx: next(IF_tcnt == 2);
-	at t2_IF_tx_right: m_IF_tx && (IF_tcnt == 2);
-	at t2_ID_rx_right: next(ID_tcnt == 2);
-	at t2_ID_tx_right: m_ID_tx && (ID_tcnt == 2);
-	at t2_EX_rx_right: next(EX_tcnt == 2);
-	at t2_EX_tx_right: m_EX_tx && (EX_tcnt == 2);
-	at t2_ME_rx_right: next(ME_tcnt == 2);
-	at t2_ME_tx_right: m_ME_tx && (ME_tcnt == 2);
-	at t2_WB_rx_right: next(WB_tcnt == 2);
-	at t2_WB_tx_right: m_WB_tx && (WB_tcnt == 2);
+	at t2_IF_rx: mg_t2_IF_rx;
+	at t2_IF_tx: mg_t2_IF_tx;
+	at t2_ID_rx: mg_t2_ID_rx;
+	at t2_ID_tx: mg_t2_ID_tx;
+	at t2_EX_rx_right: mg_t2_EX_rx;
+	at t2_EX_tx: mg_t2_EX_tx;
+	at t2_ME_rx_right: mg_t2_ME_rx;
+	at t2_ME_tx: mg_t2_ME_tx;
+	at t2_WB_rx_right: mg_t2_WB_rx;
+	at t2_WB_tx: mg_t2_WB_tx;
 
 end property;
