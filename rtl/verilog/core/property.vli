@@ -608,11 +608,11 @@ prove:
 	at t2_IF_tx: mg_t2_IF_tx;
 	at t2_ID_rx: mg_t2_ID_rx;
 	at t2_ID_tx: mg_t2_ID_tx;
-	at t2_EX_rx_right: mg_t2_EX_rx;
+	at t2_EX_rx: mg_t2_EX_rx;
 	at t2_EX_tx: mg_t2_EX_tx;
-	at t2_ME_rx_right: mg_t2_ME_rx;
+	at t2_ME_rx: mg_t2_ME_rx;
 	at t2_ME_tx: mg_t2_ME_tx;
-	at t2_WB_rx_right: mg_t2_WB_rx;
+	at t2_WB_rx: mg_t2_WB_rx;
 	at t2_WB_tx: mg_t2_WB_tx;
 
 end property;
