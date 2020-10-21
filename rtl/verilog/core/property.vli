@@ -257,25 +257,28 @@ for timepoints:
 
 	// t0 detection
 	t0_ID_tx_find = t + 0..examination_window waits_for complete mg_t0_ID_tx,
-	t0_ID_tx_left = t + 0..examination_window waits_for complete next(!t0_ID_tx_wait),
+	t0_ID_tx_left = t + 0..examination_window waits_for complete next(!t0_ID_tx_wait), // Occurance after t
 
 	t0_EX_rx_find = t + 0..examination_window waits_for complete mg_t0_EX_rx,
-	//t0_EX_rx_left = t + 0..examination_window waits_for complete next(!t0_EX_rx_wait),
+	t0_EX_rx_left = t + 0..examination_window waits_for complete next(!t0_EX_rx_wait), // Left limit t0_ID_tx_left
 
 	t0_EX_tx_find = t + 0..examination_window waits_for complete mg_t0_EX_tx,
-	t0_EX_tx_left = t + 0..examination_window waits_for complete next(!t0_EX_tx_wait),
+	t0_EX_tx_left_temp = t + 0..examination_window waits_for complete next(!t0_EX_tx_wait), // Occurance after t0_EX_rx_left+1
+	t0_EX_tx_left = max_timepoint(t0_EX_rx_left, t0_EX_tx_left_temp), // Left limit t0_EX_rx_left
 
 	t0_ME_rx_find = t + 0..examination_window waits_for complete mg_t0_ME_rx,
-	//t0_ME_rx_left = t + 0..examination_window waits_for complete next(!t0_ME_rx_wait),
+	t0_ME_rx_left = t + 0..examination_window waits_for complete next(!t0_ME_rx_wait), // Occurance after t0_EX_tx_left
 
 	t0_ME_tx_find = t + 0..examination_window waits_for complete mg_t0_ME_tx,
-	t0_ME_tx_left = t + 0..examination_window waits_for complete next(!t0_ME_tx_wait),
+	t0_ME_tx_left_temp = t + 0..examination_window waits_for complete next(!t0_ME_tx_wait), // Occurance after t0_ME_rx_left+1
+	t0_ME_tx_left = max_timepoint(t0_ME_rx_left, t0_ME_tx_left_temp), // Left limit t0_ME_rx_left
 
 	t0_WB_rx_find = t + 0..examination_window waits_for complete mg_t0_WB_rx,
-	//t0_WB_rx_left = t + 0..examination_window waits_for complete next(!t0_WB_rx_wait),
+	t0_WB_rx_left = t + 0..examination_window waits_for complete next(!t0_WB_rx_wait), // Occurance after t0_ME_tx_left
 
 	t0_WB_tx_find = t + 0..examination_window waits_for complete mg_t0_WB_tx,
-	t0_WB_tx_left = t + 0..examination_window waits_for complete next(!t0_WB_tx_wait),
+	t0_WB_tx_left_temp = t + 0..examination_window waits_for complete next(!t0_WB_tx_wait), // Occurance after t0_WB_rx_left+1
+	t0_WB_tx_left = max_timepoint(t0_WB_rx_left, t0_WB_tx_left_temp), // Left limit t0_WB_rx_left
 
 
 	// t1 detection
@@ -289,8 +292,8 @@ for timepoints:
 	t1_ID_rx_right = t + 0..examination_window waits_for complete mg_t1_ID_rx,
 	t1_ID_rx_find = t1_ID_rx_right,
 	t1_ID_rx_left = t + 0..examination_window waits_for complete next(!t1_ID_rx_wait),
-	t1_ID_rx_temp = max_timepoint(t1_ID_rx_left, t1_IF_tx_left),
-	t1_ID_rx = max_timepoint(t1_ID_rx_temp, t0_ID_tx_left),
+	t1_ID_rx_temp = max_timepoint(t1_IF_tx_left, t1_ID_rx_left), // Left limit t1_IF_tx_left 
+	t1_ID_rx = max_timepoint(t0_ID_tx_left, t1_ID_rx_temp), // Left limit t0_ID_tx_left 
 
 	t1_ID_tx_right = t + 1..examination_window waits_for complete (mg_t1_ID_tx || (next(ID_tcnt) > 1)),
 	t1_ID_tx_find = t + 0..examination_window waits_for complete mg_t1_ID_tx,
@@ -300,8 +303,8 @@ for timepoints:
 	t1_EX_rx_right = t + 0..examination_window waits_for complete mg_t1_EX_rx,
 	t1_EX_rx_find = t1_EX_rx_right,
 	t1_EX_rx_left = t + 0..examination_window waits_for complete next(!t1_EX_rx_wait),
-	t1_EX_rx_temp = max_timepoint(t1_EX_rx_left, t1_ID_tx_left),
-	t1_EX_rx = max_timepoint(t1_EX_rx_temp, t0_EX_tx_left),
+	t1_EX_rx_temp = max_timepoint(t1_ID_tx_left, t1_EX_rx_left), // Left limit t1_ID_tx_left 
+	t1_EX_rx = max_timepoint(t0_EX_tx_left, t1_EX_rx_temp), // Left limit t0_EX_tx_left 
 
 	t1_EX_tx_right = t + 1..examination_window waits_for complete (mg_t1_EX_tx || (next(EX_tcnt) > 1)),
 	t1_EX_tx_find = t + 0..examination_window waits_for complete mg_t1_EX_tx,
@@ -311,8 +314,8 @@ for timepoints:
 	t1_ME_rx_right = t + 0..examination_window waits_for complete mg_t1_ME_rx,
 	t1_ME_rx_find = t1_ME_rx_right,
 	t1_ME_rx_left = t + 0..examination_window waits_for complete next(!t1_ME_rx_wait),
-	t1_ME_rx_temp = max_timepoint(t1_ME_rx_left, t1_EX_tx_left),
-	t1_ME_rx = max_timepoint(t1_ME_rx_temp, t0_ME_tx_left),
+	t1_ME_rx_temp = max_timepoint(t1_EX_tx_left, t1_ME_rx_left), // Left limit t1_EX_tx_left 
+	t1_ME_rx = max_timepoint(t0_ME_tx_left, t1_ME_rx_temp), // Left limit t0_ME_tx_left 
 
 	t1_ME_tx_right = t + 1..examination_window waits_for complete (mg_t1_ME_tx || (next(ME_tcnt) > 1)),
 	t1_ME_tx_find = t + 0..examination_window waits_for complete mg_t1_ME_tx,
@@ -322,8 +325,8 @@ for timepoints:
 	t1_WB_rx_right = t + 0..examination_window waits_for complete mg_t1_WB_rx,
 	t1_WB_rx_find = t1_WB_rx_right,
 	t1_WB_rx_left = t + 0..examination_window waits_for complete next(!t1_WB_rx_wait),
-	t1_WB_rx_temp = max_timepoint(t1_WB_rx_left, t1_ME_tx_left),
-	t1_WB_rx = max_timepoint(t1_WB_rx_temp, t0_WB_tx_left),
+	t1_WB_rx_temp = max_timepoint(t1_ME_tx_left, t1_WB_rx_left), // Left limit t1_ME_tx_left 
+	t1_WB_rx = max_timepoint(t0_WB_tx_left, t1_WB_rx_temp), // Left limit t0_WB_tx_left 
 
 	t1_WB_tx_right = t + 1..examination_window waits_for complete (mg_t1_WB_tx || (next(WB_tcnt) > 1)),
 	t1_WB_tx_find = t + 0..examination_window waits_for complete mg_t1_WB_tx,
@@ -336,46 +339,54 @@ for timepoints:
 	t2_IF_tx_right = t + 1..examination_window waits_for complete (mg_t2_IF_tx || (next(IF_tcnt) > 2)),
 	t2_IF_tx_find = t + 0..examination_window waits_for complete mg_t2_IF_tx,
 	t2_IF_tx_left = t + 0..examination_window waits_for complete next(!t2_IF_tx_wait),
+	t2_IF_tx_left_t2 = max_timepoint(t2_IF_rx, t2_IF_tx_left), // Left limit t2_IF_rx
 	t2_IF_tx = t2_IF_tx_right,
 
 	t2_ID_rx_right = t + 0..examination_window waits_for complete mg_t2_ID_rx,
 	t2_ID_rx_find = t2_ID_rx_right,
 	t2_ID_rx_left = t + 0..examination_window waits_for complete next(!t2_ID_rx_wait),
-	t2_ID_rx_temp = max_timepoint(t2_ID_rx_left, t2_IF_tx_left),
-	t2_ID_rx = max_timepoint(t2_ID_rx_temp, t1_ID_tx_left),
+	t2_ID_rx_left_t2 = max_timepoint(t2_IF_rx, t2_ID_rx_left), // Left limit t2_IF_rx
+	t2_ID_rx_temp = max_timepoint(t2_IF_tx_left_t2, t2_ID_rx_left_t2), // Left limit t2_IF_tx_left_t2
+	t2_ID_rx = max_timepoint(t1_ID_tx_left, t2_ID_rx_temp), // Left limit t1_ID_tx_left
 
 	t2_ID_tx_right = t + 1..examination_window waits_for complete (mg_t2_ID_tx || (next(ID_tcnt) > 2)),
 	t2_ID_tx_find = t + 0..examination_window waits_for complete mg_t2_ID_tx,
 	t2_ID_tx_left = t + 0..examination_window waits_for complete next(!t2_ID_tx_wait),
+	t2_ID_tx_left_t2 = max_timepoint(t2_IF_rx, t2_ID_tx_left), // Left limit t2_IF_rx
 	t2_ID_tx = t2_ID_tx_right,
 
 	t2_EX_rx_right = t + 0..examination_window waits_for complete mg_t2_EX_rx,
 	t2_EX_rx_find = t2_EX_rx_right,
 	t2_EX_rx_left = t + 0..examination_window waits_for complete next(!t2_EX_rx_wait),
-	t2_EX_rx_temp = max_timepoint(t2_EX_rx_left, t2_ID_tx_left),
-	t2_EX_rx = max_timepoint(t2_EX_rx_temp, t1_EX_tx_left),
+	t2_EX_rx_left_t2 = max_timepoint(t2_IF_rx, t2_EX_rx_left), // Left limit t2_IF_rx
+	t2_EX_rx_temp = max_timepoint(t2_ID_tx_left_t2, t2_EX_rx_left_t2), // Left limit t2_ID_tx_left_t2
+	t2_EX_rx = max_timepoint(t1_EX_tx_left, t2_EX_rx_temp), // Left limit t1_EX_tx_left
 
 	t2_EX_tx_right = t + 1..examination_window waits_for complete (mg_t2_EX_tx || (next(EX_tcnt) > 2)),
 	t2_EX_tx_find = t + 0..examination_window waits_for complete mg_t2_EX_tx,
 	t2_EX_tx_left = t + 0..examination_window waits_for complete next(!t2_EX_tx_wait),
+	t2_EX_tx_left_t2 = max_timepoint(t2_IF_rx, t2_EX_tx_left), // Left limit t2_IF_rx
 	t2_EX_tx = t2_EX_tx_right,
 
 	t2_ME_rx_right = t + 0..examination_window waits_for complete mg_t2_ME_rx,
 	t2_ME_rx_find = t2_ME_rx_right,
 	t2_ME_rx_left = t + 0..examination_window waits_for complete next(!t2_ME_rx_wait),
-	t2_ME_rx_temp = max_timepoint(t2_ME_rx_left, t2_EX_tx_left),
-	t2_ME_rx = max_timepoint(t2_ME_rx_temp, t1_ME_tx_left),
+	t2_ME_rx_left_t2 = max_timepoint(t2_IF_rx, t2_ME_rx_left), // Left limit t2_IF_rx
+	t2_ME_rx_temp = max_timepoint(t2_EX_tx_left_t2, t2_ME_rx_left_t2), // Left limit t2_EX_tx_left_t2
+	t2_ME_rx = max_timepoint(t1_ME_tx_left, t2_ME_rx_temp), // Left limit t1_ME_tx_left
 
 	t2_ME_tx_right = t + 1..examination_window waits_for complete (mg_t2_ME_tx || (next(ME_tcnt) > 2)),
 	t2_ME_tx_find = t + 0..examination_window waits_for complete mg_t2_ME_tx,
 	t2_ME_tx_left = t + 0..examination_window waits_for complete next(!t2_ME_tx_wait),
+	t2_ME_tx_left_t2 = max_timepoint(t2_IF_rx, t2_ME_tx_left), // Left limit t2_IF_rx
 	t2_ME_tx = t2_ME_tx_right,
 
 	t2_WB_rx_right = t + 0..examination_window waits_for complete mg_t2_WB_rx,
 	t2_WB_rx_find = t2_WB_rx_right,
 	t2_WB_rx_left = t + 0..examination_window waits_for complete next(!t2_WB_rx_wait),
-	t2_WB_rx_temp = max_timepoint(t2_WB_rx_left, t2_ME_tx_left),
-	t2_WB_rx = max_timepoint(t2_WB_rx_temp, t1_WB_tx_left),
+	t2_WB_rx_left_t2 = max_timepoint(t2_IF_rx, t2_WB_rx_left), // Left limit t2_IF_rx
+	t2_WB_rx_temp = max_timepoint(t2_ME_tx_left_t2, t2_WB_rx_left_t2), // Left limit t2_ME_tx_left_t2
+	t2_WB_rx = max_timepoint(t1_WB_tx_left, t2_WB_rx_temp), // Left limit t1_WB_tx_left
 
 	t2_WB_tx_right = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
 	t2_WB_tx = t2_WB_tx_right,
