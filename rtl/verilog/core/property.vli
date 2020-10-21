@@ -498,78 +498,78 @@ assume:
 
 
 	during[t,t0_ID_tx_find]: t0_ID_tx_wait == at_t0_ID_tx_exist;
-	during[t0_ID_tx_find+1,t+examination_window]: t0_ID_tx_wait == false;
+	during[t0_ID_tx_find+1,t+examination_window]: !t0_ID_tx_wait;
 
 	during[t,t0_EX_rx_find]: t0_EX_rx_wait == at_t0_EX_rx_exist;
-	during[t0_EX_rx_find+1,t+examination_window]: t0_EX_rx_wait == false;
+	during[t0_EX_rx_find+1,t+examination_window]: !t0_EX_rx_wait;
 
 	during[t,t0_EX_tx_find]: t0_EX_tx_wait == at_t0_EX_tx_exist;
-	during[t0_EX_tx_find+1,t+examination_window]: t0_EX_tx_wait == false;
+	during[t0_EX_tx_find+1,t+examination_window]: !t0_EX_tx_wait;
 
 	during[t,t0_ME_rx_find]: t0_ME_rx_wait == at_t0_ME_rx_exist;
-	during[t0_ME_rx_find+1,t+examination_window]: t0_ME_rx_wait == false;	
+	during[t0_ME_rx_find+1,t+examination_window]: !t0_ME_rx_wait;	
 
 	during[t,t0_ME_tx_find]: t0_ME_tx_wait == at_t0_ME_tx_exist;
-	during[t0_ME_tx_find+1,t+examination_window]: t0_ME_tx_wait == false;
+	during[t0_ME_tx_find+1,t+examination_window]: !t0_ME_tx_wait;
 
 	during[t,t0_WB_rx_find]: t0_WB_rx_wait == at_t0_WB_rx_exist;
-	during[t0_WB_rx_find+1,t+examination_window]: t0_WB_rx_wait == false;	
+	during[t0_WB_rx_find+1,t+examination_window]: !t0_WB_rx_wait;	
 
 	during[t,t0_WB_tx_find]: t0_WB_tx_wait == at_t0_WB_tx_exist;
-	during[t0_WB_tx_find+1,t+examination_window]: t0_WB_tx_wait == false;
+	during[t0_WB_tx_find+1,t+examination_window]: !t0_WB_tx_wait;
 
 
 	during[t,t1_IF_tx_find]: t1_IF_tx_wait == at_t1_IF_tx_exist;
-	during[t1_IF_tx_find+1,t+examination_window]: t1_IF_tx_wait == false;
+	during[t1_IF_tx_find+1,t+examination_window]: !t1_IF_tx_wait;
 
 	during[t,t1_ID_rx_find]: t1_ID_rx_wait == at_t1_ID_rx_exist;
-	during[t1_ID_rx_find+1,t+examination_window]: t1_ID_rx_wait == false;
+	during[t1_ID_rx_find+1,t+examination_window]: !t1_ID_rx_wait;
 
 	during[t,t1_ID_tx_find]: t1_ID_tx_wait == at_t1_ID_tx_exist;
-	during[t1_ID_tx_find+1,t+examination_window]: t1_ID_tx_wait == false;
+	during[t1_ID_tx_find+1,t+examination_window]: !t1_ID_tx_wait;
 
 	during[t,t1_EX_rx_find]: t1_EX_rx_wait == at_t1_EX_rx_exist;
-	during[t1_EX_rx_find+1,t+examination_window]: t1_EX_rx_wait == false;
+	during[t1_EX_rx_find+1,t+examination_window]: !t1_EX_rx_wait;
 
 	during[t,t1_EX_tx_find]: t1_EX_tx_wait == at_t1_EX_tx_exist;
-	during[t1_EX_tx_find+1,t+examination_window]: t1_EX_tx_wait == false;
+	during[t1_EX_tx_find+1,t+examination_window]: !t1_EX_tx_wait;
 
 	during[t,t1_ME_rx_find]: t1_ME_rx_wait == at_t1_ME_rx_exist;
-	during[t1_ME_rx_find+1,t+examination_window]: t1_ME_rx_wait == false;
+	during[t1_ME_rx_find+1,t+examination_window]: !t1_ME_rx_wait;
 
 	during[t,t1_ME_tx_find]: t1_ME_tx_wait == at_t1_ME_tx_exist;
-	during[t1_ME_tx_find+1,t+examination_window]: t1_ME_tx_wait == false;	
+	during[t1_ME_tx_find+1,t+examination_window]: !t1_ME_tx_wait;	
 
 	during[t,t1_WB_rx_find]: t1_WB_rx_wait == at_t1_WB_rx_exist;
-	during[t1_WB_rx_find+1,t+examination_window]: t1_WB_rx_wait == false;
+	during[t1_WB_rx_find+1,t+examination_window]: !t1_WB_rx_wait;
 
 	during[t,t1_WB_tx_find]: t1_WB_tx_wait == at_t1_WB_tx_exist;
-	during[t1_WB_tx_find+1,t+examination_window]: t1_WB_tx_wait == false;
+	during[t1_WB_tx_find+1,t+examination_window]: !t1_WB_tx_wait;
 
 
 	during[t,t2_IF_tx_find]: t2_IF_tx_wait == at_t2_IF_tx_exist;
-	during[t2_IF_tx_find+1,t+examination_window]: t2_IF_tx_wait == false;
+	during[t2_IF_tx_find+1,t+examination_window]: !t2_IF_tx_wait;
 
 	during[t,t2_ID_rx_find]: t2_ID_rx_wait == at_t2_ID_rx_exist;
-	during[t2_ID_rx_find+1,t+examination_window]: t2_ID_rx_wait == false;
+	during[t2_ID_rx_find+1,t+examination_window]: !t2_ID_rx_wait;
 
 	during[t,t2_ID_tx_find]: t2_ID_tx_wait == at_t2_ID_tx_exist;
-	during[t2_ID_tx_find+1,t+examination_window]: t2_ID_tx_wait == false;
+	during[t2_ID_tx_find+1,t+examination_window]: !t2_ID_tx_wait;
 
 	during[t,t2_EX_rx_find]: t2_EX_rx_wait == at_t2_EX_rx_exist;
-	during[t2_EX_rx_find+1,t+examination_window]: t2_EX_rx_wait == false;
+	during[t2_EX_rx_find+1,t+examination_window]: !t2_EX_rx_wait;
 
 	during[t,t2_EX_tx_find]: t2_EX_tx_wait == at_t2_EX_tx_exist;
-	during[t2_EX_tx_find+1,t+examination_window]: t2_EX_tx_wait == false;
+	during[t2_EX_tx_find+1,t+examination_window]: !t2_EX_tx_wait;
 
 	during[t,t2_ME_rx_find]: t2_ME_rx_wait == at_t2_ME_rx_exist;
-	during[t2_ME_rx_find+1,t+examination_window]: t2_ME_rx_wait == false;
+	during[t2_ME_rx_find+1,t+examination_window]: !t2_ME_rx_wait;
 
 	during[t,t2_ME_tx_find]: t2_ME_tx_wait == at_t2_ME_tx_exist;
-	during[t2_ME_tx_find+1,t+examination_window]: t2_ME_tx_wait == false;	
+	during[t2_ME_tx_find+1,t+examination_window]: !t2_ME_tx_wait;	
 
 	during[t,t2_WB_rx_find]: t2_WB_rx_wait == at_t2_WB_rx_exist;
-	during[t2_WB_rx_find+1,t+examination_window]: t2_WB_rx_wait == false;
+	during[t2_WB_rx_find+1,t+examination_window]: !t2_WB_rx_wait;
 
 
 
