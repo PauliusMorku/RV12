@@ -1,10 +1,22 @@
 macro unsigned examination_window := 25 end macro;
 
-macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;// && (next(c/if_unit/id_stall) == 0)) end macro;
-macro logic m_ID_rx := (/*(c/id_unit/if_bubble == 0) && */(c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
-macro logic m_EX_rx := (/*(c/ex_units/id_bubble == 0) && */(c/ex_units/ex_stall == 0)) end macro;
-macro logic m_ME_rx := ((c/mem_unit/wb_stall == 0)/* || (prev(m_EX_rx) && (c/ex_units/ex_stall == 0))*/) end macro; // either no bubble or instruction finished in EX stage (if it stalls then it is still computing)
-macro logic m_WB_rx := ((c/wb_unit/wb_stall_o == 0)/* || prev(m_ME_rx)*/) end macro;
+//macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;// && (next(c/if_unit/id_stall) == 0)) end macro;
+//macro logic m_ID_rx := (/*(c/id_unit/if_bubble == 0) && */(c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
+//macro logic m_EX_rx := (/*(c/ex_units/id_bubble == 0) && */(c/ex_units/ex_stall == 0)) end macro;
+//macro logic m_ME_rx := ((c/mem_unit/wb_stall == 0)/* || (prev(m_EX_rx) && (c/ex_units/ex_stall == 0))*/) end macro; // either no bubble or instruction finished in EX stage (if it stalls then it is still computing)
+//macro logic m_WB_rx := ((c/wb_unit/wb_stall_o == 0)/* || prev(m_ME_rx)*/) end macro;
+
+//macro logic m_IF_tx := m_ID_rx end macro;
+//macro logic m_ID_tx := m_EX_rx end macro;
+//macro logic m_EX_tx := m_ME_rx end macro;
+//macro logic m_ME_tx := m_WB_rx end macro;
+//macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
+
+macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;
+macro logic m_ID_rx := ((c/id_unit/if_bubble == 0) && (c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
+macro logic m_EX_rx := ((c/ex_units/id_bubble == 0) && (c/ex_units/ex_stall == 0)) end macro;
+macro logic m_ME_rx := ((c/mem_unit/ex_bubble == 0) && (c/mem_unit/wb_stall == 0)) end macro;
+macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/wb_stall_o == 0)) end macro;
 
 macro logic m_IF_tx := m_ID_rx end macro;
 macro logic m_ID_tx := m_EX_rx end macro;
@@ -468,10 +480,6 @@ freeze:
 assume:
 	// Property is triggered whenever a token successfully traverses the pipeline with no flushing
 	at t1_IF_rx_n: mg_t1_IF_rx;
-	at t1_ID_rx_l: mg_t1_ID_rx;
-	at t1_EX_rx_l: mg_t1_EX_rx;
-	at t1_ME_rx_l: mg_t1_ME_rx;
-	at t1_WB_rx_l: mg_t1_WB_rx;
 
 	// Connect token counters
 	at t: IF_tcnt == 0;
@@ -586,6 +594,8 @@ assume:
 prove:
 	true;
 
+	at t2_IF_rx_n: mg_t2_IF_rx;
+/*
 	at t2_ID_tx_r: ID_instr == at_t2_IF_tx_instr;
 	at t2_EX_tx_r: EX_instr == at_t2_ID_tx_instr;
 	at t2_ME_tx_r: ME_instr == at_t2_EX_tx_instr;
@@ -603,7 +613,7 @@ prove:
 	at t1_EX_tx_r: mg_t1_EX_tx;
 	at t1_ME_tx_r: mg_t1_ME_tx;
 	at t1_WB_tx_r: mg_t1_WB_tx;
-
+*/
 	// Prove right hook
 	at t2_IF_rx_n: mg_t2_IF_rx;
 	at t2_IF_tx_r: mg_t2_IF_tx;
@@ -615,5 +625,6 @@ prove:
 	at t2_ME_tx_r: mg_t2_ME_tx;
 	at t2_WB_rx_l: mg_t2_WB_rx;
 	at t2_WB_tx_r: mg_t2_WB_tx;
+
 
 end property;
