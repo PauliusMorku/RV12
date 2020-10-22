@@ -250,6 +250,11 @@ macro logic mg_t2_EX_flush := (m_EX_flush && (EX_tcnt == 2)) end macro;
 macro logic mg_t2_ME_flush := (m_ME_flush && (ME_tcnt == 2)) end macro;
 macro logic mg_t2_WB_flush := (m_WB_flush && (WB_tcnt == 2)) end macro;
 
+macro logic mg_t3_IF_tx := (m_IF_tx && (IF_tcnt == 3)) end macro;
+macro logic mg_t3_ID_tx := (m_ID_tx && (ID_tcnt == 3)) end macro;
+macro logic mg_t3_EX_tx := (m_EX_tx && (EX_tcnt == 3)) end macro;
+macro logic mg_t3_ME_tx := (m_ME_tx && (ME_tcnt == 3)) end macro;
+
 
 /*
 TODO:
@@ -311,7 +316,7 @@ for timepoints:
 	t1_ID_tx_right = t + 1..examination_window waits_for complete (mg_t1_ID_tx || (next(ID_tcnt) > 1)),
 	t1_ID_tx_find = t + 0..examination_window waits_for complete mg_t1_ID_tx,
 	t1_ID_tx_left = t + 0..examination_window waits_for complete next(!t1_ID_tx_wait),
-	t1_ID_tx = t1_ID_tx_right,
+	//t1_ID_tx = t1_ID_tx_right,
 
 	t1_EX_rx_right = t + 0..examination_window waits_for complete mg_t1_EX_rx,
 	t1_EX_rx_find = t1_EX_rx_right,
@@ -322,7 +327,7 @@ for timepoints:
 	t1_EX_tx_right = t + 1..examination_window waits_for complete (mg_t1_EX_tx || (next(EX_tcnt) > 1)),
 	t1_EX_tx_find = t + 0..examination_window waits_for complete mg_t1_EX_tx,
 	t1_EX_tx_left = t + 0..examination_window waits_for complete next(!t1_EX_tx_wait),
-	t1_EX_tx = t1_EX_tx_right,
+	//t1_EX_tx = t1_EX_tx_right,
 
 	t1_ME_rx_right = t + 0..examination_window waits_for complete mg_t1_ME_rx,
 	t1_ME_rx_find = t1_ME_rx_right,
@@ -333,7 +338,7 @@ for timepoints:
 	t1_ME_tx_right = t + 1..examination_window waits_for complete (mg_t1_ME_tx || (next(ME_tcnt) > 1)),
 	t1_ME_tx_find = t + 0..examination_window waits_for complete mg_t1_ME_tx,
 	t1_ME_tx_left = t + 0..examination_window waits_for complete next(!t1_ME_tx_wait),
-	t1_ME_tx = t1_ME_tx_right,
+	//t1_ME_tx = t1_ME_tx_right,
 
 	t1_WB_rx_right = t + 0..examination_window waits_for complete mg_t1_WB_rx,
 	t1_WB_rx_find = t1_WB_rx_right,
@@ -344,7 +349,7 @@ for timepoints:
 	t1_WB_tx_right = t + 1..examination_window waits_for complete (mg_t1_WB_tx || (next(WB_tcnt) > 1)),
 	t1_WB_tx_find = t + 0..examination_window waits_for complete mg_t1_WB_tx,
 	t1_WB_tx_left = t + 0..examination_window waits_for complete next(!t1_WB_tx_wait),
-	t1_WB_tx = t1_WB_tx_right,
+	//t1_WB_tx = t1_WB_tx_right,
 
 	// t2 detection
 	t2_IF_rx = t + 0..examination_window waits_for complete mg_t2_IF_rx,
@@ -366,7 +371,7 @@ for timepoints:
 	t2_ID_tx_find = t + 0..examination_window waits_for complete mg_t2_ID_tx,
 	t2_ID_tx_left = t + 0..examination_window waits_for complete next(!t2_ID_tx_wait),
 	t2_ID_tx_left_t2 = max_timepoint(t2_IF_rx, t2_ID_tx_left), // Left limit t2_IF_rx
-	t2_ID_tx = t2_ID_tx_right,
+	//t2_ID_tx = t2_ID_tx_right,
 
 	t2_EX_rx_right = t + 0..examination_window waits_for complete mg_t2_EX_rx,
 	t2_EX_rx_find = t2_EX_rx_right,
@@ -379,7 +384,7 @@ for timepoints:
 	t2_EX_tx_find = t + 0..examination_window waits_for complete mg_t2_EX_tx,
 	t2_EX_tx_left = t + 0..examination_window waits_for complete next(!t2_EX_tx_wait),
 	t2_EX_tx_left_t2 = max_timepoint(t2_IF_rx, t2_EX_tx_left), // Left limit t2_IF_rx
-	t2_EX_tx = t2_EX_tx_right,
+	//t2_EX_tx = t2_EX_tx_right,
 
 	t2_ME_rx_right = t + 0..examination_window waits_for complete mg_t2_ME_rx,
 	t2_ME_rx_find = t2_ME_rx_right,
@@ -392,7 +397,7 @@ for timepoints:
 	t2_ME_tx_find = t + 0..examination_window waits_for complete mg_t2_ME_tx,
 	t2_ME_tx_left = t + 0..examination_window waits_for complete next(!t2_ME_tx_wait),
 	t2_ME_tx_left_t2 = max_timepoint(t2_IF_rx, t2_ME_tx_left), // Left limit t2_IF_rx
-	t2_ME_tx = t2_ME_tx_right,
+	//t2_ME_tx = t2_ME_tx_right,
 
 	t2_WB_rx_right = t + 0..examination_window waits_for complete mg_t2_WB_rx,
 	t2_WB_rx_find = t2_WB_rx_right,
@@ -402,7 +407,24 @@ for timepoints:
 	t2_WB_rx = max_timepoint(t1_WB_tx_left, t2_WB_rx_temp), // Left limit t1_WB_tx_left (special case since it is the last pipeline stage)
 
 	t2_WB_tx_right = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
-	t2_WB_tx = t2_WB_tx_right,
+	//t2_WB_tx = t2_WB_tx_right,
+
+
+	t1_ID_tx = min_timepoint(t2_IF_tx_right , t1_ID_tx_right),
+	t1_EX_tx = min_timepoint(t2_ID_tx_right , t1_EX_tx_right),
+	t1_ME_tx = min_timepoint(t2_EX_tx_right , t1_ME_tx_right),
+	t1_WB_tx = min_timepoint(t2_ME_tx_right , t1_WB_tx_right),
+
+
+	t3_IF_tx_right = t + 1..examination_window waits_for complete (mg_t3_IF_tx || (next(IF_tcnt) > 3)),
+	t3_ID_tx_right = t + 1..examination_window waits_for complete (mg_t3_ID_tx || (next(ID_tcnt) > 3)),
+	t3_EX_tx_right = t + 1..examination_window waits_for complete (mg_t3_EX_tx || (next(EX_tcnt) > 3)),
+	t3_ME_tx_right = t + 1..examination_window waits_for complete (mg_t3_ME_tx || (next(ME_tcnt) > 3)),
+
+	t2_ID_tx = min_timepoint(t3_IF_tx_right , t2_ID_tx_right),
+	t2_EX_tx = min_timepoint(t3_ID_tx_right , t2_EX_tx_right),
+	t2_ME_tx = min_timepoint(t3_EX_tx_right , t2_ME_tx_right),
+	t2_WB_tx = min_timepoint(t3_ME_tx_right , t2_WB_tx_right),
 
 
 	// Detect flushing cases
