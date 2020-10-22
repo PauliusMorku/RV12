@@ -250,12 +250,6 @@ macro logic mg_t2_EX_flush := (m_EX_flush && (EX_tcnt == 2)) end macro;
 macro logic mg_t2_ME_flush := (m_ME_flush && (ME_tcnt == 2)) end macro;
 macro logic mg_t2_WB_flush := (m_WB_flush && (WB_tcnt == 2)) end macro;
 
-macro logic mg_t3_IF_tx := (m_IF_tx && (IF_tcnt == 3)) end macro;
-macro logic mg_t3_ID_tx := (m_ID_tx && (ID_tcnt == 3)) end macro;
-macro logic mg_t3_EX_tx := (m_EX_tx && (EX_tcnt == 3)) end macro;
-macro logic mg_t3_ME_tx := (m_ME_tx && (ME_tcnt == 3)) end macro;
-
-
 /*
 TODO:
 	-try to use bubbles to ommit use of stages
@@ -270,148 +264,134 @@ dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_
 for timepoints:
 
 	// t0 detection
-	t0_ID_tx_find = t + 0..examination_window waits_for complete mg_t0_ID_tx,
+	t0_ID_tx_f = t + 0..examination_window waits_for complete mg_t0_ID_tx,
 	t0_ID_tx_l = t + 0..examination_window waits_for complete next(!t0_ID_tx_wait), // Occurance after t
 
-	t0_EX_rx_find = t + 0..examination_window waits_for complete mg_t0_EX_rx,
-	t0_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t0_EX_rx_wait), // Left limit t0_ID_tx_l
-	t0_EX_rx_l = max_timepoint(t0_EX_rx_l1, t0_ID_tx_l), // Left limit t0_ID_tx_l
+	t0_EX_rx_f = t + 0..examination_window waits_for complete mg_t0_EX_rx,
+	t0_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t0_EX_rx_wait), // Occurance after t0_ID_tx_l
+	t0_EX_rx_l = max_timepoint(t0_EX_rx_l1, t0_ID_tx_l),
 
-	t0_EX_tx_find = t + 0..examination_window waits_for complete mg_t0_EX_tx,
+	t0_EX_tx_f = t + 0..examination_window waits_for complete mg_t0_EX_tx,
 	t0_EX_tx_l1 = t + 0..examination_window waits_for complete next(!t0_EX_tx_wait), // Occurance after t0_EX_rx_l1+1
-	t0_EX_tx_l = max_timepoint(t0_EX_tx_l1, t0_EX_rx_l), // Left limit t0_EX_rx_l
+	t0_EX_tx_l = max_timepoint(t0_EX_tx_l1, t0_EX_rx_l),
 
-	t0_ME_rx_find = t + 0..examination_window waits_for complete mg_t0_ME_rx,
+	t0_ME_rx_f = t + 0..examination_window waits_for complete mg_t0_ME_rx,
 	t0_ME_rx_l1 = t + 0..examination_window waits_for complete next(!t0_ME_rx_wait), // Occurance after t0_EX_tx_l1
-	t0_ME_rx_l = max_timepoint(t0_ME_rx_l1, t0_EX_tx_l), // Left limit t0_EX_tx_l
+	t0_ME_rx_l = max_timepoint(t0_ME_rx_l1, t0_EX_tx_l),
 
-	t0_ME_tx_find = t + 0..examination_window waits_for complete mg_t0_ME_tx,
+	t0_ME_tx_f = t + 0..examination_window waits_for complete mg_t0_ME_tx,
 	t0_ME_tx_l1 = t + 0..examination_window waits_for complete next(!t0_ME_tx_wait), // Occurance after t0_ME_rx_l1+1
-	t0_ME_tx_l = max_timepoint(t0_ME_tx_l1, t0_ME_rx_l), // Left limit t0_ME_rx_l
+	t0_ME_tx_l = max_timepoint(t0_ME_tx_l1, t0_ME_rx_l),
 
-	t0_WB_rx_find = t + 0..examination_window waits_for complete mg_t0_WB_rx,
+	t0_WB_rx_f = t + 0..examination_window waits_for complete mg_t0_WB_rx,
 	t0_WB_rx_l1 = t + 0..examination_window waits_for complete next(!t0_WB_rx_wait), // Occurance after t0_ME_tx_l1
-	t0_WB_rx_l = max_timepoint(t0_WB_rx_l1, t0_ME_tx_l), // Left limit t0_ME_tx_l
+	t0_WB_rx_l = max_timepoint(t0_WB_rx_l1, t0_ME_tx_l),
 
-	t0_WB_tx_find = t + 0..examination_window waits_for complete mg_t0_WB_tx,
+	t0_WB_tx_f = t + 0..examination_window waits_for complete mg_t0_WB_tx,
 	t0_WB_tx_l1 = t + 0..examination_window waits_for complete next(!t0_WB_tx_wait), // Occurance after t0_WB_rx_l1+1
-	t0_WB_tx_l = max_timepoint(t0_WB_tx_l1, t0_WB_rx_l), // Left limit t0_WB_rx_l
+	t0_WB_tx_l = max_timepoint(t0_WB_tx_l1, t0_WB_rx_l),
 
 
 	// t1 detection
 	t1_IF_rx_n = t,
 
 	t1_IF_tx_r = t + 1..examination_window waits_for complete (mg_t1_IF_tx || (next(IF_tcnt) > 1)),
-	t1_IF_tx_find = t + 0..examination_window waits_for complete mg_t1_IF_tx,
+	t1_IF_tx_f = t + 0..examination_window waits_for complete mg_t1_IF_tx,
 	t1_IF_tx_l = t + 0..examination_window waits_for complete next(!t1_IF_tx_wait),
 
-	t1_ID_rx_r = t + 0..examination_window waits_for complete mg_t1_ID_rx,
-	t1_ID_rx_find = t1_ID_rx_r,
+	t1_ID_rx_f = t + 0..examination_window waits_for complete mg_t1_ID_rx,
 	t1_ID_rx_l1 = t + 0..examination_window waits_for complete next(!t1_ID_rx_wait),
-	t1_ID_rx_l2 = max_timepoint(t1_ID_rx_l1, t1_IF_tx_l), // Left limit t1_IF_tx_l 
-	t1_ID_rx_l = max_timepoint(t1_ID_rx_l2, t0_EX_rx_l), // Left limit t0_EX_rx_l 
+	t1_ID_rx_l2 = max_timepoint(t1_ID_rx_l1, t1_IF_tx_l),
+	t1_ID_rx_l = max_timepoint(t1_ID_rx_l2, t0_EX_rx_l),
+	t1_ID_rx_r = t1_ID_rx_f,
 
-	t1_ID_tx_r1 = t + 1..examination_window waits_for complete (mg_t1_ID_tx || (next(ID_tcnt) > 1)),
-	t1_ID_tx_find = t + 0..examination_window waits_for complete mg_t1_ID_tx,
+	t1_ID_tx_f = t + 0..examination_window waits_for complete mg_t1_ID_tx,
 	t1_ID_tx_l = t + 0..examination_window waits_for complete next(!t1_ID_tx_wait),
+	t1_ID_tx_r = t + 1..examination_window waits_for complete (mg_t1_ID_tx || (next(ID_tcnt) > 1)),
 
-	t1_EX_rx_r = t + 0..examination_window waits_for complete mg_t1_EX_rx,
-	t1_EX_rx_find = t1_EX_rx_r,
+	t1_EX_rx_f = t + 0..examination_window waits_for complete mg_t1_EX_rx,
 	t1_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t1_EX_rx_wait),
-	t1_EX_rx_l2 = max_timepoint(t1_EX_rx_l1, t1_ID_tx_l), // Left limit t1_ID_tx_l 
-	t1_EX_rx_l = max_timepoint(t1_EX_rx_l2, t0_ME_rx_l), // Left limit t0_ME_rx_l 
+	t1_EX_rx_l2 = max_timepoint(t1_EX_rx_l1, t1_ID_tx_l),
+	t1_EX_rx_l = max_timepoint(t1_EX_rx_l2, t0_ME_rx_l),
+	t1_EX_rx_r = t1_EX_rx_f,
 
-	t1_EX_tx_r1 = t + 1..examination_window waits_for complete (mg_t1_EX_tx || (next(EX_tcnt) > 1)),
-	t1_EX_tx_find = t + 0..examination_window waits_for complete mg_t1_EX_tx,
+	t1_EX_tx_f = t + 0..examination_window waits_for complete mg_t1_EX_tx,
 	t1_EX_tx_l = t + 0..examination_window waits_for complete next(!t1_EX_tx_wait),
+	t1_EX_tx_r = t + 1..examination_window waits_for complete (mg_t1_EX_tx || (next(EX_tcnt) > 1)),
 
-	t1_ME_rx_r = t + 0..examination_window waits_for complete mg_t1_ME_rx,
-	t1_ME_rx_find = t1_ME_rx_r,
+	t1_ME_rx_f = t + 0..examination_window waits_for complete mg_t1_ME_rx,
 	t1_ME_rx_l1 = t + 0..examination_window waits_for complete next(!t1_ME_rx_wait),
-	t1_ME_rx_l2 = max_timepoint(t1_ME_rx_l1, t1_EX_tx_l), // Left limit t1_EX_tx_l 
-	t1_ME_rx_l = max_timepoint(t1_ME_rx_l2, t0_WB_rx_l), // Left limit t0_WB_rx_l 
+	t1_ME_rx_l2 = max_timepoint(t1_ME_rx_l1, t1_EX_tx_l),
+	t1_ME_rx_l = max_timepoint(t1_ME_rx_l2, t0_WB_rx_l),
+	t1_ME_rx_r = t1_ME_rx_f,
 
-	t1_ME_tx_r1 = t + 1..examination_window waits_for complete (mg_t1_ME_tx || (next(ME_tcnt) > 1)),
-	t1_ME_tx_find = t + 0..examination_window waits_for complete mg_t1_ME_tx,
+	t1_ME_tx_f = t + 0..examination_window waits_for complete mg_t1_ME_tx,
 	t1_ME_tx_l = t + 0..examination_window waits_for complete next(!t1_ME_tx_wait),
+	t1_ME_tx_r = t + 1..examination_window waits_for complete (mg_t1_ME_tx || (next(ME_tcnt) > 1)),
 
-	t1_WB_rx_r = t + 0..examination_window waits_for complete mg_t1_WB_rx,
-	t1_WB_rx_find = t1_WB_rx_r,
+	t1_WB_rx_f = t + 0..examination_window waits_for complete mg_t1_WB_rx,
 	t1_WB_rx_l1 = t + 0..examination_window waits_for complete next(!t1_WB_rx_wait),
-	t1_WB_rx_l2 = max_timepoint(t1_WB_rx_l1, t1_ME_tx_l), // Left limit t1_ME_tx_l 
-	t1_WB_rx_l = max_timepoint(t1_WB_rx_l2, t0_WB_tx_l), // Left limit t0_WB_tx_l (special case since it is the last pipeline stage)
+	t1_WB_rx_l2 = max_timepoint(t1_WB_rx_l1, t1_ME_tx_l),
+	t1_WB_rx_l = max_timepoint(t1_WB_rx_l2, t0_WB_tx_l), // special case since it is the last pipeline stage
+	t1_WB_rx_r = t1_WB_rx_f,
 
-	t1_WB_tx_r1 = t + 1..examination_window waits_for complete (mg_t1_WB_tx || (next(WB_tcnt) > 1)),
-	t1_WB_tx_find = t + 0..examination_window waits_for complete mg_t1_WB_tx,
+	t1_WB_tx_f = t + 0..examination_window waits_for complete mg_t1_WB_tx,
 	t1_WB_tx_l = t + 0..examination_window waits_for complete next(!t1_WB_tx_wait),
+	t1_WB_tx_r = t + 1..examination_window waits_for complete (mg_t1_WB_tx || (next(WB_tcnt) > 1)),
+
 
 	// t2 detection
 	t2_IF_rx_n = t + 0..examination_window waits_for complete mg_t2_IF_rx,
 
-	t2_IF_tx_r = t + 1..examination_window waits_for complete (mg_t2_IF_tx || (next(IF_tcnt) > 2)),
-	t2_IF_tx_find = t + 0..examination_window waits_for complete mg_t2_IF_tx,
+	t2_IF_tx_f = t + 0..examination_window waits_for complete mg_t2_IF_tx,
 	t2_IF_tx_l1 = t + 0..examination_window waits_for complete next(!t2_IF_tx_wait),
-	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
+	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_n),
+	t2_IF_tx_r = t + 1..examination_window waits_for complete (mg_t2_IF_tx || (next(IF_tcnt) > 2)),
 
-	t2_ID_rx_r = t + 0..examination_window waits_for complete mg_t2_ID_rx,
-	t2_ID_rx_find = t2_ID_rx_r,
+	t2_ID_rx_f = t + 0..examination_window waits_for complete mg_t2_ID_rx,
 	t2_ID_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_rx_wait),
-	t2_ID_rx_l2 = max_timepoint(t2_ID_rx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
-	t2_ID_rx_l3 = max_timepoint(t2_ID_rx_l2, t2_IF_tx_l), // Left limit t2_IF_tx_l
-	t2_ID_rx_l = max_timepoint(t2_ID_rx_l3, t1_EX_rx_l), // Left limit t1_EX_rx_l
+	t2_ID_rx_l2 = max_timepoint(t2_ID_rx_l1, t2_IF_rx_n),
+	t2_ID_rx_l3 = max_timepoint(t2_ID_rx_l2, t2_IF_tx_l),
+	t2_ID_rx_l = max_timepoint(t2_ID_rx_l3, t1_EX_rx_l),
+	t2_ID_rx_r = t2_ID_rx_f,
 
-	t2_ID_tx_r1 = t + 1..examination_window waits_for complete (mg_t2_ID_tx || (next(ID_tcnt) > 2)),
-	t2_ID_tx_find = t + 0..examination_window waits_for complete mg_t2_ID_tx,
+	t2_ID_tx_f = t + 0..examination_window waits_for complete mg_t2_ID_tx,
 	t2_ID_tx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_tx_wait),
-	t2_ID_tx_l = max_timepoint(t2_ID_tx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
+	t2_ID_tx_l = max_timepoint(t2_ID_tx_l1, t2_IF_rx_n),
+	t2_ID_tx_r = t + 1..examination_window waits_for complete (mg_t2_ID_tx || (next(ID_tcnt) > 2)),
 
-	t2_EX_rx_r = t + 0..examination_window waits_for complete mg_t2_EX_rx,
-	t2_EX_rx_find = t2_EX_rx_r,
+	t2_EX_rx_f = t + 0..examination_window waits_for complete mg_t2_EX_rx,
 	t2_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_rx_wait),
-	t2_EX_rx_l2 = max_timepoint(t2_EX_rx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
-	t2_EX_rx_l3 = max_timepoint(t2_EX_rx_l2, t2_ID_tx_l), // Left limit t2_ID_tx_l
-	t2_EX_rx_l = max_timepoint(t2_EX_rx_l3, t1_ME_rx_l), // Left limit t1_ME_rx_l
+	t2_EX_rx_l2 = max_timepoint(t2_EX_rx_l1, t2_IF_rx_n),
+	t2_EX_rx_l3 = max_timepoint(t2_EX_rx_l2, t2_ID_tx_l),
+	t2_EX_rx_l = max_timepoint(t2_EX_rx_l3, t1_ME_rx_l),
+	t2_EX_rx_r = t2_EX_rx_f,
 
-	t2_EX_tx_r1 = t + 1..examination_window waits_for complete (mg_t2_EX_tx || (next(EX_tcnt) > 2)),
-	t2_EX_tx_find = t + 0..examination_window waits_for complete mg_t2_EX_tx,
+	t2_EX_tx_f = t + 0..examination_window waits_for complete mg_t2_EX_tx,
 	t2_EX_tx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_tx_wait),
-	t2_EX_tx_l = max_timepoint(t2_EX_tx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
+	t2_EX_tx_l = max_timepoint(t2_EX_tx_l1, t2_IF_rx_n),
+	t2_EX_tx_r = t + 1..examination_window waits_for complete (mg_t2_EX_tx || (next(EX_tcnt) > 2)),
 
-	t2_ME_rx_r = t + 0..examination_window waits_for complete mg_t2_ME_rx,
-	t2_ME_rx_find = t2_ME_rx_r,
+	t2_ME_rx_f = t + 0..examination_window waits_for complete mg_t2_ME_rx,
 	t2_ME_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_rx_wait),
-	t2_ME_rx_l2 = max_timepoint(t2_ME_rx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
-	t2_ME_rx_l3 = max_timepoint(t2_ME_rx_l2, t2_EX_tx_l), // Left limit t2_EX_tx_l
-	t2_ME_rx_l = max_timepoint(t2_ME_rx_l3, t1_WB_rx_l), // Left limit t1_WB_rx_l
+	t2_ME_rx_l2 = max_timepoint(t2_ME_rx_l1, t2_IF_rx_n),
+	t2_ME_rx_l3 = max_timepoint(t2_ME_rx_l2, t2_EX_tx_l),
+	t2_ME_rx_l = max_timepoint(t2_ME_rx_l3, t1_WB_rx_l),
+	t2_ME_rx_r = t2_ME_rx_f,
 
-	t2_ME_tx_r1 = t + 1..examination_window waits_for complete (mg_t2_ME_tx || (next(ME_tcnt) > 2)),
-	t2_ME_tx_find = t + 0..examination_window waits_for complete mg_t2_ME_tx,
+	t2_ME_tx_f = t + 0..examination_window waits_for complete mg_t2_ME_tx,
 	t2_ME_tx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_tx_wait),
-	t2_ME_tx_l = max_timepoint(t2_ME_tx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
+	t2_ME_tx_l = max_timepoint(t2_ME_tx_l1, t2_IF_rx_n),
+	t2_ME_tx_r = t + 1..examination_window waits_for complete (mg_t2_ME_tx || (next(ME_tcnt) > 2)),
 
-	t2_WB_rx_r = t + 0..examination_window waits_for complete mg_t2_WB_rx,
-	t2_WB_rx_find = t2_WB_rx_r,
+	t2_WB_rx_f = t + 0..examination_window waits_for complete mg_t2_WB_rx,
 	t2_WB_rx_l1 = t + 0..examination_window waits_for complete next(!t2_WB_rx_wait),
-	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_IF_rx_n), // Left limit t2_IF_rx_n
-	t2_WB_rx_l3 = max_timepoint(t2_WB_rx_l2, t2_ME_tx_l), // Left limit t2_ME_tx_l
-	t2_WB_rx_l = max_timepoint(t2_WB_rx_l3, t1_WB_tx_l), // Left limit t1_WB_tx_l (special case since it is the last pipeline stage)
+	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_IF_rx_n),
+	t2_WB_rx_l3 = max_timepoint(t2_WB_rx_l2, t2_ME_tx_l),
+	t2_WB_rx_l = max_timepoint(t2_WB_rx_l3, t1_WB_tx_l), // special case since it is the last pipeline stage
+	t2_WB_rx_r = t2_WB_rx_f,
 
-	t2_WB_tx_r1 = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
-
-	t3_IF_tx_r = t + 1..examination_window waits_for complete (mg_t3_IF_tx || (next(IF_tcnt) > 3)),
-	t3_ID_tx_r = t + 1..examination_window waits_for complete (mg_t3_ID_tx || (next(ID_tcnt) > 3)),
-	t3_EX_tx_r = t + 1..examination_window waits_for complete (mg_t3_EX_tx || (next(EX_tcnt) > 3)),
-	t3_ME_tx_r = t + 1..examination_window waits_for complete (mg_t3_ME_tx || (next(ME_tcnt) > 3)),
-
-	t2_ID_tx_r = min_timepoint(t2_ID_tx_r1, t3_IF_tx_r),
-	t2_EX_tx_r = min_timepoint(t2_EX_tx_r1, t3_ID_tx_r),
-	t2_ME_tx_r = min_timepoint(t2_ME_tx_r1, t3_EX_tx_r),
-	t2_WB_tx_r = min_timepoint(t2_WB_tx_r1, t3_ME_tx_r),
-
-	t1_ID_tx_r = min_timepoint(t1_ID_tx_r1, t2_IF_tx_r),
-	t1_EX_tx_r = min_timepoint(t1_EX_tx_r1, t2_ID_tx_r),
-	t1_ME_tx_r = min_timepoint(t1_ME_tx_r1, t2_EX_tx_r),
-	t1_WB_tx_r = min_timepoint(t1_WB_tx_r1, t2_ME_tx_r),
+	t2_WB_tx_r = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
 
 
 	// Detect flushing cases
@@ -430,32 +410,32 @@ for timepoints:
 	t_dummy = t; // last dummy line (for the semicolon)
 
 freeze:
-	at_t0_ID_tx_exist = mg_t0_ID_tx@t0_ID_tx_find,
-	at_t0_EX_rx_exist = mg_t0_EX_rx@t0_EX_rx_find,
-	at_t0_EX_tx_exist = mg_t0_EX_tx@t0_EX_tx_find,
-	at_t0_ME_rx_exist = mg_t0_ME_rx@t0_ME_rx_find,
-	at_t0_ME_tx_exist = mg_t0_ME_tx@t0_ME_tx_find,
-	at_t0_WB_rx_exist = mg_t0_WB_rx@t0_WB_rx_find,
-	at_t0_WB_tx_exist = mg_t0_WB_tx@t0_WB_tx_find,
+	at_t0_ID_tx_exist = mg_t0_ID_tx@t0_ID_tx_f,
+	at_t0_EX_rx_exist = mg_t0_EX_rx@t0_EX_rx_f,
+	at_t0_EX_tx_exist = mg_t0_EX_tx@t0_EX_tx_f,
+	at_t0_ME_rx_exist = mg_t0_ME_rx@t0_ME_rx_f,
+	at_t0_ME_tx_exist = mg_t0_ME_tx@t0_ME_tx_f,
+	at_t0_WB_rx_exist = mg_t0_WB_rx@t0_WB_rx_f,
+	at_t0_WB_tx_exist = mg_t0_WB_tx@t0_WB_tx_f,
 
-	at_t1_IF_tx_exist = mg_t1_IF_tx@t1_IF_tx_find,
-	at_t1_ID_rx_exist = mg_t1_ID_rx@t1_ID_rx_find,
-	at_t1_ID_tx_exist = mg_t1_ID_tx@t1_ID_tx_find,
-	at_t1_EX_rx_exist = mg_t1_EX_rx@t1_EX_rx_find,
-	at_t1_EX_tx_exist = mg_t1_EX_tx@t1_EX_tx_find,
-	at_t1_ME_rx_exist = mg_t1_ME_rx@t1_ME_rx_find,
-	at_t1_ME_tx_exist = mg_t1_ME_tx@t1_ME_tx_find,
-	at_t1_WB_rx_exist = mg_t1_WB_rx@t1_WB_rx_find,
-	at_t1_WB_tx_exist = mg_t1_WB_tx@t1_WB_tx_find,
+	at_t1_IF_tx_exist = mg_t1_IF_tx@t1_IF_tx_f,
+	at_t1_ID_rx_exist = mg_t1_ID_rx@t1_ID_rx_f,
+	at_t1_ID_tx_exist = mg_t1_ID_tx@t1_ID_tx_f,
+	at_t1_EX_rx_exist = mg_t1_EX_rx@t1_EX_rx_f,
+	at_t1_EX_tx_exist = mg_t1_EX_tx@t1_EX_tx_f,
+	at_t1_ME_rx_exist = mg_t1_ME_rx@t1_ME_rx_f,
+	at_t1_ME_tx_exist = mg_t1_ME_tx@t1_ME_tx_f,
+	at_t1_WB_rx_exist = mg_t1_WB_rx@t1_WB_rx_f,
+	at_t1_WB_tx_exist = mg_t1_WB_tx@t1_WB_tx_f,
 
-	at_t2_IF_tx_exist = mg_t2_IF_tx@t2_IF_tx_find,
-	at_t2_ID_rx_exist = mg_t2_ID_rx@t2_ID_rx_find,
-	at_t2_ID_tx_exist = mg_t2_ID_tx@t2_ID_tx_find,
-	at_t2_EX_rx_exist = mg_t2_EX_rx@t2_EX_rx_find,
-	at_t2_EX_tx_exist = mg_t2_EX_tx@t2_EX_tx_find,
-	at_t2_ME_rx_exist = mg_t2_ME_rx@t2_ME_rx_find,
-	at_t2_ME_tx_exist = mg_t2_ME_tx@t2_ME_tx_find,
-	at_t2_WB_rx_exist = mg_t2_WB_rx@t2_WB_rx_find,
+	at_t2_IF_tx_exist = mg_t2_IF_tx@t2_IF_tx_f,
+	at_t2_ID_rx_exist = mg_t2_ID_rx@t2_ID_rx_f,
+	at_t2_ID_tx_exist = mg_t2_ID_tx@t2_ID_tx_f,
+	at_t2_EX_rx_exist = mg_t2_EX_rx@t2_EX_rx_f,
+	at_t2_EX_tx_exist = mg_t2_EX_tx@t2_EX_tx_f,
+	at_t2_ME_rx_exist = mg_t2_ME_rx@t2_ME_rx_f,
+	at_t2_ME_tx_exist = mg_t2_ME_tx@t2_ME_tx_f,
+	at_t2_WB_rx_exist = mg_t2_WB_rx@t2_WB_rx_f,
 
 	// Freeze signals indicating flushing cases
 	at_t1_IF_flush = mg_t1_IF_flush@t1_IF_flush,
@@ -482,19 +462,7 @@ freeze:
 	at_t2_EX_tx_pc = EX_pc@t2_EX_tx_r,
 	at_t2_ME_tx_pc = ME_pc@t2_ME_tx_r,
 	at_t2_WB_tx_pc = WB_pc@t2_WB_tx_r,
-/*
-	at_t1_IF_token = IF_token@t1_IF_rx_n,
-	at_t1_ID_token = IF_token@t1_IF_rx_n,
-	at_t1_EX_token = IF_token@t1_IF_rx_n,
-	at_t1_ME_token = IF_token@t1_IF_rx_n,
-	at_t1_WB_token = IF_token@t1_IF_rx_n,
 
-	at_t2_IF_token = IF_token@t2_IF_rx_right,
-	at_t2_ID_token = IF_token@t2_IF_rx_right,
-	at_t2_EX_token = IF_token@t2_IF_rx_right,
-	at_t2_ME_token = IF_token@t2_IF_rx_right,
-	at_t2_WB_token = IF_token@t2_IF_rx_right,
-*/
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
 assume:
@@ -530,79 +498,79 @@ assume:
 
 
 
-	during[t,t0_ID_tx_find]: t0_ID_tx_wait == at_t0_ID_tx_exist;
-	during[t0_ID_tx_find+1,t+examination_window]: !t0_ID_tx_wait;
+	during[t,t0_ID_tx_f]: t0_ID_tx_wait == at_t0_ID_tx_exist;
+	during[t0_ID_tx_f+1,t+examination_window]: !t0_ID_tx_wait;
 
-	during[t,t0_EX_rx_find]: t0_EX_rx_wait == at_t0_EX_rx_exist;
-	during[t0_EX_rx_find+1,t+examination_window]: !t0_EX_rx_wait;
+	during[t,t0_EX_rx_f]: t0_EX_rx_wait == at_t0_EX_rx_exist;
+	during[t0_EX_rx_f+1,t+examination_window]: !t0_EX_rx_wait;
 
-	during[t,t0_EX_tx_find]: t0_EX_tx_wait == at_t0_EX_tx_exist;
-	during[t0_EX_tx_find+1,t+examination_window]: !t0_EX_tx_wait;
+	during[t,t0_EX_tx_f]: t0_EX_tx_wait == at_t0_EX_tx_exist;
+	during[t0_EX_tx_f+1,t+examination_window]: !t0_EX_tx_wait;
 
-	during[t,t0_ME_rx_find]: t0_ME_rx_wait == at_t0_ME_rx_exist;
-	during[t0_ME_rx_find+1,t+examination_window]: !t0_ME_rx_wait;	
+	during[t,t0_ME_rx_f]: t0_ME_rx_wait == at_t0_ME_rx_exist;
+	during[t0_ME_rx_f+1,t+examination_window]: !t0_ME_rx_wait;	
 
-	during[t,t0_ME_tx_find]: t0_ME_tx_wait == at_t0_ME_tx_exist;
-	during[t0_ME_tx_find+1,t+examination_window]: !t0_ME_tx_wait;
+	during[t,t0_ME_tx_f]: t0_ME_tx_wait == at_t0_ME_tx_exist;
+	during[t0_ME_tx_f+1,t+examination_window]: !t0_ME_tx_wait;
 
-	during[t,t0_WB_rx_find]: t0_WB_rx_wait == at_t0_WB_rx_exist;
-	during[t0_WB_rx_find+1,t+examination_window]: !t0_WB_rx_wait;	
+	during[t,t0_WB_rx_f]: t0_WB_rx_wait == at_t0_WB_rx_exist;
+	during[t0_WB_rx_f+1,t+examination_window]: !t0_WB_rx_wait;	
 
-	during[t,t0_WB_tx_find]: t0_WB_tx_wait == at_t0_WB_tx_exist;
-	during[t0_WB_tx_find+1,t+examination_window]: !t0_WB_tx_wait;
-
-
-	during[t,t1_IF_tx_find]: t1_IF_tx_wait == at_t1_IF_tx_exist;
-	during[t1_IF_tx_find+1,t+examination_window]: !t1_IF_tx_wait;
-
-	during[t,t1_ID_rx_find]: t1_ID_rx_wait == at_t1_ID_rx_exist;
-	during[t1_ID_rx_find+1,t+examination_window]: !t1_ID_rx_wait;
-
-	during[t,t1_ID_tx_find]: t1_ID_tx_wait == at_t1_ID_tx_exist;
-	during[t1_ID_tx_find+1,t+examination_window]: !t1_ID_tx_wait;
-
-	during[t,t1_EX_rx_find]: t1_EX_rx_wait == at_t1_EX_rx_exist;
-	during[t1_EX_rx_find+1,t+examination_window]: !t1_EX_rx_wait;
-
-	during[t,t1_EX_tx_find]: t1_EX_tx_wait == at_t1_EX_tx_exist;
-	during[t1_EX_tx_find+1,t+examination_window]: !t1_EX_tx_wait;
-
-	during[t,t1_ME_rx_find]: t1_ME_rx_wait == at_t1_ME_rx_exist;
-	during[t1_ME_rx_find+1,t+examination_window]: !t1_ME_rx_wait;
-
-	during[t,t1_ME_tx_find]: t1_ME_tx_wait == at_t1_ME_tx_exist;
-	during[t1_ME_tx_find+1,t+examination_window]: !t1_ME_tx_wait;	
-
-	during[t,t1_WB_rx_find]: t1_WB_rx_wait == at_t1_WB_rx_exist;
-	during[t1_WB_rx_find+1,t+examination_window]: !t1_WB_rx_wait;
-
-	during[t,t1_WB_tx_find]: t1_WB_tx_wait == at_t1_WB_tx_exist;
-	during[t1_WB_tx_find+1,t+examination_window]: !t1_WB_tx_wait;
+	during[t,t0_WB_tx_f]: t0_WB_tx_wait == at_t0_WB_tx_exist;
+	during[t0_WB_tx_f+1,t+examination_window]: !t0_WB_tx_wait;
 
 
-	during[t,t2_IF_tx_find]: t2_IF_tx_wait == at_t2_IF_tx_exist;
-	during[t2_IF_tx_find+1,t+examination_window]: !t2_IF_tx_wait;
+	during[t,t1_IF_tx_f]: t1_IF_tx_wait == at_t1_IF_tx_exist;
+	during[t1_IF_tx_f+1,t+examination_window]: !t1_IF_tx_wait;
 
-	during[t,t2_ID_rx_find]: t2_ID_rx_wait == at_t2_ID_rx_exist;
-	during[t2_ID_rx_find+1,t+examination_window]: !t2_ID_rx_wait;
+	during[t,t1_ID_rx_f]: t1_ID_rx_wait == at_t1_ID_rx_exist;
+	during[t1_ID_rx_f+1,t+examination_window]: !t1_ID_rx_wait;
 
-	during[t,t2_ID_tx_find]: t2_ID_tx_wait == at_t2_ID_tx_exist;
-	during[t2_ID_tx_find+1,t+examination_window]: !t2_ID_tx_wait;
+	during[t,t1_ID_tx_f]: t1_ID_tx_wait == at_t1_ID_tx_exist;
+	during[t1_ID_tx_f+1,t+examination_window]: !t1_ID_tx_wait;
 
-	during[t,t2_EX_rx_find]: t2_EX_rx_wait == at_t2_EX_rx_exist;
-	during[t2_EX_rx_find+1,t+examination_window]: !t2_EX_rx_wait;
+	during[t,t1_EX_rx_f]: t1_EX_rx_wait == at_t1_EX_rx_exist;
+	during[t1_EX_rx_f+1,t+examination_window]: !t1_EX_rx_wait;
 
-	during[t,t2_EX_tx_find]: t2_EX_tx_wait == at_t2_EX_tx_exist;
-	during[t2_EX_tx_find+1,t+examination_window]: !t2_EX_tx_wait;
+	during[t,t1_EX_tx_f]: t1_EX_tx_wait == at_t1_EX_tx_exist;
+	during[t1_EX_tx_f+1,t+examination_window]: !t1_EX_tx_wait;
 
-	during[t,t2_ME_rx_find]: t2_ME_rx_wait == at_t2_ME_rx_exist;
-	during[t2_ME_rx_find+1,t+examination_window]: !t2_ME_rx_wait;
+	during[t,t1_ME_rx_f]: t1_ME_rx_wait == at_t1_ME_rx_exist;
+	during[t1_ME_rx_f+1,t+examination_window]: !t1_ME_rx_wait;
 
-	during[t,t2_ME_tx_find]: t2_ME_tx_wait == at_t2_ME_tx_exist;
-	during[t2_ME_tx_find+1,t+examination_window]: !t2_ME_tx_wait;	
+	during[t,t1_ME_tx_f]: t1_ME_tx_wait == at_t1_ME_tx_exist;
+	during[t1_ME_tx_f+1,t+examination_window]: !t1_ME_tx_wait;	
 
-	during[t,t2_WB_rx_find]: t2_WB_rx_wait == at_t2_WB_rx_exist;
-	during[t2_WB_rx_find+1,t+examination_window]: !t2_WB_rx_wait;
+	during[t,t1_WB_rx_f]: t1_WB_rx_wait == at_t1_WB_rx_exist;
+	during[t1_WB_rx_f+1,t+examination_window]: !t1_WB_rx_wait;
+
+	during[t,t1_WB_tx_f]: t1_WB_tx_wait == at_t1_WB_tx_exist;
+	during[t1_WB_tx_f+1,t+examination_window]: !t1_WB_tx_wait;
+
+
+	during[t,t2_IF_tx_f]: t2_IF_tx_wait == at_t2_IF_tx_exist;
+	during[t2_IF_tx_f+1,t+examination_window]: !t2_IF_tx_wait;
+
+	during[t,t2_ID_rx_f]: t2_ID_rx_wait == at_t2_ID_rx_exist;
+	during[t2_ID_rx_f+1,t+examination_window]: !t2_ID_rx_wait;
+
+	during[t,t2_ID_tx_f]: t2_ID_tx_wait == at_t2_ID_tx_exist;
+	during[t2_ID_tx_f+1,t+examination_window]: !t2_ID_tx_wait;
+
+	during[t,t2_EX_rx_f]: t2_EX_rx_wait == at_t2_EX_rx_exist;
+	during[t2_EX_rx_f+1,t+examination_window]: !t2_EX_rx_wait;
+
+	during[t,t2_EX_tx_f]: t2_EX_tx_wait == at_t2_EX_tx_exist;
+	during[t2_EX_tx_f+1,t+examination_window]: !t2_EX_tx_wait;
+
+	during[t,t2_ME_rx_f]: t2_ME_rx_wait == at_t2_ME_rx_exist;
+	during[t2_ME_rx_f+1,t+examination_window]: !t2_ME_rx_wait;
+
+	during[t,t2_ME_tx_f]: t2_ME_tx_wait == at_t2_ME_tx_exist;
+	during[t2_ME_tx_f+1,t+examination_window]: !t2_ME_tx_wait;	
+
+	during[t,t2_WB_rx_f]: t2_WB_rx_wait == at_t2_WB_rx_exist;
+	during[t2_WB_rx_f+1,t+examination_window]: !t2_WB_rx_wait;
 
 
 
