@@ -326,7 +326,7 @@ for timepoints:
 	tl_WB_tx_l1 = t + 0..examination_window waits_for complete next(!tl_WB_tx_wait), // Occurance after tl_WB_rx_l1+1
 	tl_WB_tx_l = max_timepoint(tl_WB_tx_l1, tl_WB_rx_l),
 
-
+/*
 	// t0 detection
 	t0_ID_tx_f = t + 0..examination_window waits_for complete mg_t0_ID_tx,
 	t0_ID_tx_l = t + 0..examination_window waits_for complete next(!t0_ID_tx_wait), // Occurance after t
@@ -355,10 +355,10 @@ for timepoints:
 	t0_WB_tx_l1 = t + 0..examination_window waits_for complete next(!t0_WB_tx_wait), // Occurance after t0_WB_rx_l1+1
 	t0_WB_tx_l = max_timepoint(t0_WB_tx_l1, t0_WB_rx_l),
 
-
+*/
 	// t1 detection
 	t1_IF_rx_n = t,
-
+/*
 	t1_IF_tx_f = t + 0..examination_window waits_for complete mg_t1_IF_tx,
 	t1_IF_tx_l = t + 0..examination_window waits_for complete next(!t1_IF_tx_wait),
 	t1_IF_tx_r = t + 1..examination_window waits_for complete (mg_t1_IF_tx || (next(IF_tcnt) > 1)),
@@ -402,7 +402,7 @@ for timepoints:
 	t1_WB_tx_f = t + 0..examination_window waits_for complete mg_t1_WB_tx,
 	t1_WB_tx_l = t + 0..examination_window waits_for complete next(!t1_WB_tx_wait),
 	t1_WB_tx_r = t + 1..examination_window waits_for complete (mg_t1_WB_tx || (next(WB_tcnt) > 1)),
-
+*/
 
 	// t2 detection
 	t2_IF_rx_n = t + 0..examination_window waits_for complete mg_t2_IF_rx,
@@ -423,7 +423,7 @@ for timepoints:
 	t2_ID_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_rx_wait),
 	t2_ID_rx_l2 = max_timepoint(t2_ID_rx_l1, t2_IF_rx_n),
 	t2_ID_rx_l3 = max_timepoint(t2_ID_rx_l2, t2_IF_tx_l),
-	t2_ID_rx_l = max_timepoint(t2_ID_rx_l3, t1_EX_rx_l),
+	t2_ID_rx_l = max_timepoint(t2_ID_rx_l3, tl_EX_rx_l),
 	//t2_ID_rx_r = t2_ID_rx_f,
 
 	t2_ID_wn_l = t2_IF_rx_n,  // max(t2_ID_rx_l, t2_IF_rx_n, t2_IF_tx_l, t1_EX_rx_l)
@@ -438,7 +438,7 @@ for timepoints:
 	t2_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_rx_wait),
 	t2_EX_rx_l2 = max_timepoint(t2_EX_rx_l1, t2_IF_rx_n),
 	t2_EX_rx_l3 = max_timepoint(t2_EX_rx_l2, t2_ID_tx_l),
-	t2_EX_rx_l = max_timepoint(t2_EX_rx_l3, t1_ME_rx_l),
+	t2_EX_rx_l = max_timepoint(t2_EX_rx_l3, tl_ME_rx_l),
 	//t2_EX_rx_r = t2_EX_rx_f,
 
 	t2_EX_tx_f = t + 0..examination_window waits_for complete mg_t2_EX_tx,
@@ -450,7 +450,7 @@ for timepoints:
 	t2_ME_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_rx_wait),
 	t2_ME_rx_l2 = max_timepoint(t2_ME_rx_l1, t2_IF_rx_n),
 	t2_ME_rx_l3 = max_timepoint(t2_ME_rx_l2, t2_EX_tx_l),
-	t2_ME_rx_l = max_timepoint(t2_ME_rx_l3, t1_WB_rx_l),
+	t2_ME_rx_l = max_timepoint(t2_ME_rx_l3, tl_WB_rx_l),
 	//t2_ME_rx_r = t2_ME_rx_f,
 
 	t2_ME_tx_f = t + 0..examination_window waits_for complete mg_t2_ME_tx,
@@ -462,7 +462,7 @@ for timepoints:
 	t2_WB_rx_l1 = t + 0..examination_window waits_for complete next(!t2_WB_rx_wait),
 	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_IF_rx_n),
 	t2_WB_rx_l3 = max_timepoint(t2_WB_rx_l2, t2_ME_tx_l),
-	t2_WB_rx_l = max_timepoint(t2_WB_rx_l3, t1_WB_tx_l), // special case since it is the last pipeline stage
+	t2_WB_rx_l = max_timepoint(t2_WB_rx_l3, tl_WB_tx_l), // special case since it is the last pipeline stage
 	//t2_WB_rx_r = t2_WB_rx_f,
 
 	t2_WB_tx_r = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
@@ -500,7 +500,7 @@ freeze:
 	at_tl_WB_rx_exist = mg_tl_WB_rx@tl_WB_rx_f,
 	at_tl_WB_tx_exist = mg_tl_WB_tx@tl_WB_tx_f,
 
-
+/*
 	at_t0_ID_tx_exist = mg_t0_ID_tx@t0_ID_tx_f,
 	at_t0_EX_rx_exist = mg_t0_EX_rx@t0_EX_rx_f,
 	at_t0_EX_tx_exist = mg_t0_EX_tx@t0_EX_tx_f,
@@ -518,7 +518,7 @@ freeze:
 	at_t1_ME_tx_exist = mg_t1_ME_tx@t1_ME_tx_f,
 	at_t1_WB_rx_exist = mg_t1_WB_rx@t1_WB_rx_f,
 	at_t1_WB_tx_exist = mg_t1_WB_tx@t1_WB_tx_f,
-
+*/
 	at_t2_IF_tx_exist = mg_t2_IF_tx@t2_IF_tx_f,
 	at_t2_ID_rx_exist = mg_t2_ID_rx@t2_ID_rx_f,
 	at_t2_ID_tx_exist = mg_t2_ID_tx@t2_ID_tx_f,
@@ -610,7 +610,7 @@ assume:
 	during[t,tl_WB_tx_f]: tl_WB_tx_wait == at_tl_WB_tx_exist;
 	during[tl_WB_tx_f+1,t+examination_window]: !tl_WB_tx_wait;
 
-
+/*
 
 	during[t,t0_ID_tx_f]: t0_ID_tx_wait == at_t0_ID_tx_exist;
 	during[t0_ID_tx_f+1,t+examination_window]: !t0_ID_tx_wait;
@@ -660,7 +660,7 @@ assume:
 
 	during[t,t1_WB_tx_f]: t1_WB_tx_wait == at_t1_WB_tx_exist;
 	during[t1_WB_tx_f+1,t+examination_window]: !t1_WB_tx_wait;
-
+*/
 
 	during[t,t2_IF_tx_f]: t2_IF_tx_wait == at_t2_IF_tx_exist;
 	during[t2_IF_tx_f+1,t+examination_window]: !t2_IF_tx_wait;
