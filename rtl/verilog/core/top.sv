@@ -93,6 +93,16 @@ module top #(
   input                            t3_flush,
   input                            within_window,
 
+  input                            tl_IF_tx_wait,
+  input                            tl_ID_rx_wait,
+  input                            tl_ID_tx_wait,
+  input                            tl_EX_rx_wait,
+  input                            tl_EX_tx_wait,
+  input                            tl_ME_rx_wait,
+  input                            tl_ME_tx_wait,
+  input                            tl_WB_rx_wait,
+  input                            tl_WB_tx_wait,
+
   input                            t0_ID_tx_wait,
   input                            t0_EX_rx_wait,
   input                            t0_EX_tx_wait,
