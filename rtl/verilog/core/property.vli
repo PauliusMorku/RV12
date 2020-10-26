@@ -25,8 +25,8 @@ macro logic m_ME_tx := m_WB_rx end macro;
 macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 */
 macro logic m_IF_flush := 0 end macro;
-macro logic m_ID_flush := 0 end macro;//(c/ex_units/bu_flush) end macro;
-macro logic m_EX_flush := (c/ex_units/bu_flush) end macro;
+macro logic m_ID_flush := 0 end macro;
+macro logic m_EX_flush := c/ex_units/bu_flush end macro;
 macro logic m_ME_flush := 0 end macro;
 macro logic m_WB_flush := 0 end macro;
 
@@ -41,12 +41,6 @@ macro unsigned ID_pc := c/id_unit/id_pc end macro;
 macro unsigned EX_pc := c/ex_units/ex_pc end macro;
 macro unsigned ME_pc := c/mem_unit/mem_pc end macro;
 macro unsigned WB_pc := c/wb_unit/wb_pc_o end macro;
-
-macro logic IF_token := true end macro;
-macro logic ID_token := !c/if_unit/if_bubble end macro;
-macro logic EX_token := !c/id_unit/id_bubble end macro;
-macro logic ME_token := !c/ex_units/ex_bubble end macro;
-macro logic WB_token := !c/mem_unit/mem_bubble end macro;
 
 // Instruction filters are used to constrain the instructions that are read from the memory (to avoid illegal instructions and reduce computation complexity)
 macro bit instr_filter1(unsigned encodedInstr) := 
@@ -195,7 +189,6 @@ macro logic mg_tl_WB_rx := (m_WB_rx && next(WB_tcnt <= 1) && next(!tl_ME_tx_wait
 macro logic mg_tl_WB_tx := (m_WB_tx && (WB_tcnt <= 1) && !tl_WB_rx_wait) end macro;
 
 
-
 macro logic mg_t0_EX_rx := (m_EX_rx && next(EX_tcnt == 0) && next(!t0_ID_tx_wait)) end macro;
 macro logic mg_t0_ME_rx := (m_ME_rx && next(ME_tcnt == 0) && next(!t0_EX_tx_wait)) end macro;
 macro logic mg_t0_WB_rx := (m_WB_rx && next(WB_tcnt == 0) && next(!t0_ME_tx_wait)) end macro;
@@ -234,48 +227,22 @@ macro logic mg_t4_IF_rx := next(IF_tcnt == 4) end macro;
 macro logic mg_t5_IF_rx := next(IF_tcnt == 5) end macro;
 
 // TODO if there is skipped stage flush can be still triggered
-//macro logic mg_t0_IF_flush := (m_IF_flush && (IF_tcnt == 0)) end macro;
 macro logic mg_t0_ID_flush := (m_ID_flush && (ID_tcnt == 0)) end macro;
 macro logic mg_t0_EX_flush := (m_EX_flush && (EX_tcnt == 0)) end macro;
 macro logic mg_t0_ME_flush := (m_ME_flush && (ME_tcnt == 0)) end macro;
 macro logic mg_t0_WB_flush := (m_WB_flush && (WB_tcnt == 0)) end macro;
 
-macro logic mg_t1_IF_flush := (m_IF_flush && (IF_tcnt == 1)) end macro;
 macro logic mg_t1_ID_flush := (m_ID_flush && (ID_tcnt == 1)) end macro;
 macro logic mg_t1_EX_flush := (m_EX_flush && (EX_tcnt == 1)) end macro;
 macro logic mg_t1_ME_flush := (m_ME_flush && (ME_tcnt == 1)) end macro;
 macro logic mg_t1_WB_flush := (m_WB_flush && (WB_tcnt == 1)) end macro;
-
-macro logic mg_t2_IF_flush := (m_IF_flush && (IF_tcnt == 2)) end macro;
-macro logic mg_t2_ID_flush := (m_ID_flush && (ID_tcnt == 2)) end macro;
-macro logic mg_t2_EX_flush := (m_EX_flush && (EX_tcnt == 2)) end macro;
-macro logic mg_t2_ME_flush := (m_ME_flush && (ME_tcnt == 2)) end macro;
-macro logic mg_t2_WB_flush := (m_WB_flush && (WB_tcnt == 2)) end macro;
-
-macro logic mg_t3_IF_flush := (m_IF_flush && (IF_tcnt == 3)) end macro;
-macro logic mg_t3_ID_flush := (m_ID_flush && (ID_tcnt == 3)) end macro;
-macro logic mg_t3_EX_flush := (m_EX_flush && (EX_tcnt == 3)) end macro;
-macro logic mg_t3_ME_flush := (m_ME_flush && (ME_tcnt == 3)) end macro;
-macro logic mg_t3_WB_flush := (m_WB_flush && (WB_tcnt == 3)) end macro;
-
-macro logic mg_t4_IF_flush := (m_IF_flush && (IF_tcnt == 4)) end macro;
-macro logic mg_t4_ID_flush := (m_ID_flush && (ID_tcnt == 4)) end macro;
-macro logic mg_t4_EX_flush := (m_EX_flush && (EX_tcnt == 4)) end macro;
-macro logic mg_t4_ME_flush := (m_ME_flush && (ME_tcnt == 4)) end macro;
-macro logic mg_t4_WB_flush := (m_WB_flush && (WB_tcnt == 4)) end macro;
-
-macro logic mg_t5_IF_flush := (m_IF_flush && (IF_tcnt == 5)) end macro;
-macro logic mg_t5_ID_flush := (m_ID_flush && (ID_tcnt == 5)) end macro;
-macro logic mg_t5_EX_flush := (m_EX_flush && (EX_tcnt == 5)) end macro;
-macro logic mg_t5_ME_flush := (m_ME_flush && (ME_tcnt == 5)) end macro;
-macro logic mg_t5_WB_flush := (m_WB_flush && (WB_tcnt == 5)) end macro;
-
 
 macro logic mg_t1_flush := ((mg_t0_ID_flush || mg_t0_EX_flush || mg_t0_ME_flush || mg_t0_WB_flush) && (IF_tcnt > 0)) end macro;
 macro logic mg_t2_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 1)) end macro;
 macro logic mg_t3_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 2)) end macro;
 macro logic mg_t4_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 3)) end macro;
 macro logic mg_t5_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 4)) end macro;
+
 /*
 TODO:
 	-try to use bubbles to ommit use of stages
@@ -308,7 +275,7 @@ prove:
 */
 
 
-property reset;
+property base;
 dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
 for timepoints:
 	t1_IF_rx_n = t + 0..examination_window waits_for complete mg_t1_IF_rx,
@@ -523,7 +490,7 @@ freeze:
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
 assume:
-	// Property is triggered whenever a token successfully traverses the pipeline with no flushing
+	// Property is triggered whenever a token enters first pipeline stage
 	at t1_IF_rx_n: mg_t1_IF_rx;
 
 	// Connect token counters
@@ -537,10 +504,6 @@ assume:
 	during[t,t+examination_window]: ME_tcnt_inc == m_ME_rx;
 	at t: WB_tcnt == 0;
 	during[t,t+examination_window]: WB_tcnt_inc == m_WB_rx;
-
-
-	// Detect token flushing
-
 
 	// Connect transaction flag variables
 	during[t,tl_IF_tx_f]: tl_IF_tx_wait == at_tl_IF_tx_exist;
@@ -602,7 +565,7 @@ assume:
 
 	// Make sure that property does not start at flushing and no flushing occur withing the window
 	at t: !at_t1_flush;
-	at t: at_t2_flush;
+	at t: !at_t2_flush;
 
 	// For debugging
 	during[t,t+examination_window]: IF_instr_enum == getInstr(IF_instr);
@@ -614,10 +577,10 @@ assume:
 prove:
 	true;
 
-	at t: !at_t2_flush || !at_t3_flush || !at_t4_flush || !at_t5_flush;
+	//at t: !at_t2_flush || !at_t3_flush || !at_t4_flush || !at_t5_flush;
 
-	at t2_IF_rx_n: mg_t2_IF_rx;
-/*	at t3_IF_rx_n: if (at_t2_flush) mg_t3_IF_rx endif;
+/*	at t2_IF_rx_n: mg_t2_IF_rx;
+	at t3_IF_rx_n: if (at_t2_flush) mg_t3_IF_rx endif;
 	at t4_IF_rx_n: if (at_t2_flush && at_t3_flush) mg_t4_IF_rx endif;
 	at t5_IF_rx_n: if (at_t2_flush && at_t3_flush && at_t4_flush) mg_t5_IF_rx endif;
 */
@@ -640,7 +603,7 @@ prove:
 	at t1_ME_tx_r: mg_t1_ME_tx;
 	at t1_WB_tx_r: mg_t1_WB_tx;
 */
-/*	// Prove right hook
+	// Prove right hook
 	at t2_IF_rx_n: mg_t2_IF_rx;
 	at t2_IF_tx_f: mg_t2_IF_tx;
 	at t2_ID_rx_f: mg_t2_ID_rx;
@@ -650,7 +613,7 @@ prove:
 	at t2_ME_rx_f: mg_t2_ME_rx;
 	at t2_ME_tx_f: mg_t2_ME_tx;
 	at t2_WB_rx_f: mg_t2_WB_rx;
-	at t2_WB_tx_f: mg_t2_WB_tx;*/
+	at t2_WB_tx_f: mg_t2_WB_tx;
 
 
 end property;

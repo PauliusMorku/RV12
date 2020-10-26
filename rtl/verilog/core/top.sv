@@ -90,11 +90,6 @@ module top #(
   input                            EX_tcnt_inc,
   input                            ME_tcnt_inc,
   input                            WB_tcnt_inc,
-  input                            t1_flush,
-  input                            t2_flush,
-  input                            t3_flush,
-  input                            t4_flush,
-  input                            t5_flush,
 
   input                            tl_IF_tx_wait,
   input                            tl_ID_rx_wait,
