@@ -270,6 +270,7 @@ macro logic mg_t2_EX_tx := (m_EX_tx && (EX_tcnt == 2)) end macro;
 macro logic mg_t2_ME_tx := (m_ME_tx && (ME_tcnt == 2)) end macro;
 macro logic mg_t2_WB_tx := (m_WB_tx && (WB_tcnt == 2)) end macro;
 
+// TODO if there is skipped stage flush can be still triggered
 macro logic mg_t2_IF_flush := (m_IF_flush && (IF_tcnt == 2)) end macro;
 macro logic mg_t2_ID_flush := (m_ID_flush && (ID_tcnt == 2)) end macro;
 macro logic mg_t2_EX_flush := (m_EX_flush && (EX_tcnt == 2)) end macro;
@@ -338,67 +339,58 @@ for timepoints:
 	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_n),
 	t2_IF_tx_r = t + 1..examination_window waits_for complete (mg_t2_IF_tx || (next(IF_tcnt) > 2)),
 
-	//t2_IF_wn_l = t2_IF_rx_n,
-	//t2_IF_wn_r = t2_IF_tx_r,
-
-
-
-
+	t2_IF_wn_l = t2_IF_rx_n,
+	t2_IF_wn_r = t2_IF_tx_r,
 
 	t2_ID_rx_f = t + 0..examination_window waits_for complete mg_t2_ID_rx,
 	t2_ID_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_rx_wait),
-	t2_ID_rx_l2 = max_timepoint(t2_ID_rx_l1, t2_IF_rx_n),
-	t2_ID_rx_l3 = max_timepoint(t2_ID_rx_l2, t2_IF_tx_l),
-	t2_ID_rx_l = max_timepoint(t2_ID_rx_l3, tl_EX_rx_l),
-	//t2_ID_rx_r = t2_ID_rx_f,
-
-	t2_ID_wn_l = t2_IF_rx_n,  // max(t2_ID_rx_l, t2_IF_rx_n, t2_IF_tx_l, t1_EX_rx_l)
-	//t2_ID_wn_r = t2_IF_tx_r,
+	t2_ID_rx_l2 = max_timepoint(t2_ID_rx_l1, t2_IF_tx_l),
+	t2_ID_rx_l = max_timepoint(t2_ID_rx_l2, tl_EX_rx_l),
 
 	t2_ID_tx_f = t + 0..examination_window waits_for complete mg_t2_ID_tx,
 	t2_ID_tx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_tx_wait),
-	t2_ID_tx_l = max_timepoint(t2_ID_tx_l1, t2_IF_rx_n),
+	t2_ID_tx_l = max_timepoint(t2_ID_tx_l1, t2_ID_rx_l),
 	t2_ID_tx_r = t + 1..examination_window waits_for complete (mg_t2_ID_tx || (next(ID_tcnt) > 2)),
+
+	t2_ID_wn_l = t2_ID_rx_l,
+	t2_ID_wn_r = t2_ID_tx_r,
 
 	t2_EX_rx_f = t + 0..examination_window waits_for complete mg_t2_EX_rx,
 	t2_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_rx_wait),
-	t2_EX_rx_l2 = max_timepoint(t2_EX_rx_l1, t2_IF_rx_n),
-	t2_EX_rx_l3 = max_timepoint(t2_EX_rx_l2, t2_ID_tx_l),
-	t2_EX_rx_l = max_timepoint(t2_EX_rx_l3, tl_ME_rx_l),
-	//t2_EX_rx_r = t2_EX_rx_f,
+	t2_EX_rx_l2 = max_timepoint(t2_EX_rx_l1, t2_ID_tx_l),
+	t2_EX_rx_l = max_timepoint(t2_EX_rx_l2, tl_ME_rx_l),
 
 	t2_EX_tx_f = t + 0..examination_window waits_for complete mg_t2_EX_tx,
 	t2_EX_tx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_tx_wait),
-	t2_EX_tx_l = max_timepoint(t2_EX_tx_l1, t2_IF_rx_n),
+	t2_EX_tx_l = max_timepoint(t2_EX_tx_l1, t2_EX_rx_l),
 	t2_EX_tx_r = t + 1..examination_window waits_for complete (mg_t2_EX_tx || (next(EX_tcnt) > 2)),
+
+	t2_EX_wn_l = t2_EX_rx_l,
+	t2_EX_wn_r = t2_EX_tx_r,
 
 	t2_ME_rx_f = t + 0..examination_window waits_for complete mg_t2_ME_rx,
 	t2_ME_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_rx_wait),
-	t2_ME_rx_l2 = max_timepoint(t2_ME_rx_l1, t2_IF_rx_n),
-	t2_ME_rx_l3 = max_timepoint(t2_ME_rx_l2, t2_EX_tx_l),
-	t2_ME_rx_l = max_timepoint(t2_ME_rx_l3, tl_WB_rx_l),
-	//t2_ME_rx_r = t2_ME_rx_f,
+	t2_ME_rx_l2 = max_timepoint(t2_ME_rx_l1, t2_EX_tx_l),
+	t2_ME_rx_l = max_timepoint(t2_ME_rx_l2, tl_WB_rx_l),
 
 	t2_ME_tx_f = t + 0..examination_window waits_for complete mg_t2_ME_tx,
 	t2_ME_tx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_tx_wait),
-	t2_ME_tx_l = max_timepoint(t2_ME_tx_l1, t2_IF_rx_n),
+	t2_ME_tx_l = max_timepoint(t2_ME_tx_l1, t2_ME_rx_l),
 	t2_ME_tx_r = t + 1..examination_window waits_for complete (mg_t2_ME_tx || (next(ME_tcnt) > 2)),
+
+	t2_ME_wn_l = t2_ME_rx_l,
+	t2_ME_wn_r = t2_ME_tx_r,
 
 	t2_WB_rx_f = t + 0..examination_window waits_for complete mg_t2_WB_rx,
 	t2_WB_rx_l1 = t + 0..examination_window waits_for complete next(!t2_WB_rx_wait),
-	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_IF_rx_n),
-	t2_WB_rx_l3 = max_timepoint(t2_WB_rx_l2, t2_ME_tx_l),
-	t2_WB_rx_l = max_timepoint(t2_WB_rx_l3, tl_WB_tx_l), // special case since it is the last pipeline stage
-	//t2_WB_rx_r = t2_WB_rx_f,
+	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_ME_tx_l),
+	t2_WB_rx_l = max_timepoint(t2_WB_rx_l2, tl_WB_tx_l), // special case since it is the last pipeline stage
 
 	t2_WB_tx_r = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
 
-/*
-	t1_IF_wn_l = t1_IF_rx_n,
-	t1_IF_wn_r = t2_IF_rx_n,
-	t1_ID_wn_l = t1_ID_rx_l,
-	t1_ID_wn_r = t2_ID_rx_r,
-*/
+	t2_WB_wn_l = t2_WB_rx_l,
+	t2_WB_wn_r = t2_WB_tx_r,
+
 
 	// Detect flushing cases
 	t1_IF_flush = t + 0..examination_window waits_for complete mg_t1_IF_flush,
