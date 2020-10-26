@@ -286,6 +286,29 @@ TODO:
 
 */
 
+
+/*
+TODO: prove that window is sufficient
+assume:
+	at t: stage_tx and token_n
+prove:
+	//rx has occured within the window 
+	within[t-examination_window: t-1]: stage_rx and token_n
+	within[t-examination_window: t-1]: IF_stage_rx and token_n // 
+*/
+
+
+/*
+TODO: prove that window is sufficient
+assume:
+	at t: stage_flush and token_n
+prove:
+	//rx has occured within the window 
+	within[t-examination_window: t-1]: stage_rx and token_n
+	within[t-examination_window: t-1]: IF_stage_rx and token_n // 
+*/
+
+
 property test;
 dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
 for timepoints:
