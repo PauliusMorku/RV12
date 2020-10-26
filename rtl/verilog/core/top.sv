@@ -1,6 +1,8 @@
 import riscv_state_pkg::*;
 import biu_constants_pkg::*;
 
+typedef enum int {UNKNOWN_INSTR, ADD_INSTR, ADDI_INSTR, AND_INSTR, ANDI_INSTR, AUIPC_INSTR, BEQ_INSTR, BGE_INSTR, BGEU_INSTR, BLT_INSTR, BLTU_INSTR, BNE_INSTR, CSRRC_INSTR, CSRRCI_INSTR, CSRRS_INSTR, CSRRSI_INSTR, CSRRW_INSTR, CSRRWI_INSTR, EBREAK_INSTR, ECALL_INSTR, FENCE_INSTR, FENCEI_INSTR, JAL_INSTR, JALR_INSTR, LB_INSTR, LBU_INSTR, LH_INSTR, LHU_INSTR, LUI_INSTR, LW_INSTR, MRET_INSTR, OR_INSTR, ORI_INSTR, SB_INSTR, SFENCEVMA_INSTR, SH_INSTR, SLL_INSTR, SLLI_INSTR, SLT_INSTR, SLTI_INSTR, SLTIU_INSTR, SLTU_INSTR, SRA_INSTR, SRAI_INSTR, SRET_INSTR, SRL_INSTR, SRLI_INSTR, SUB_INSTR, SW_INSTR, URET_INSTR, WFI_INSTR, XOR_INSTR, XORI_INSTR} Instr_t;
+
 module top #(
   parameter            XLEN                  = 32,
   parameter [XLEN-1:0] PC_INIT               = 'h200,
@@ -91,6 +93,8 @@ module top #(
   input                            t1_flush,
   input                            t2_flush,
   input                            t3_flush,
+  input                            t4_flush,
+  input                            t5_flush,
 
   input                            tl_IF_tx_wait,
   input                            tl_ID_rx_wait,
@@ -109,7 +113,14 @@ module top #(
   input                            t2_EX_tx_wait,
   input                            t2_ME_rx_wait,
   input                            t2_ME_tx_wait,
-  input                            t2_WB_rx_wait
+  input                            t2_WB_rx_wait,
+
+  // For debugging
+  input Instr_t if_instr_enum,
+  input Instr_t id_instr_enum,
+  input Instr_t ex_instr_enum,
+  input Instr_t me_instr_enum,
+  input Instr_t wb_instr_enum
 );
 
 
@@ -118,8 +129,6 @@ module top #(
   logic [5:0] EX_tcnt;
   logic [5:0] ME_tcnt;
   logic [5:0] WB_tcnt;
-
-  typedef enum int {INSTR_UNKNOWN, INSTR_ADD, INSTR_ADDI, INSTR_AND, INSTR_ANDI, INSTR_AUIPC, INSTR_BEQ, INSTR_BGE, INSTR_BGEU, INSTR_BLT, INSTR_BLTU, INSTR_BNE, INSTR_CSRRC, INSTR_CSRRCI, INSTR_CSRRS, INSTR_CSRRSI, INSTR_CSRRW, INSTR_CSRRWI, INSTR_EBREAK, INSTR_ECALL, INSTR_FENCE, INSTR_FENCEI, INSTR_JAL, INSTR_JALR, INSTR_LB, INSTR_LBU, INSTR_LH, INSTR_LHU, INSTR_LUI, INSTR_LW, INSTR_MRET, INSTR_OR, INSTR_ORI, INSTR_SB, INSTR_SFENCEVMA, INSTR_SH, INSTR_SLL, INSTR_SLLI, INSTR_SLT, INSTR_SLTI, INSTR_SLTIU, INSTR_SLTU, INSTR_SRA, INSTR_SRAI, INSTR_SRET, INSTR_SRL, INSTR_SRLI, INSTR_SUB, INSTR_SW, INSTR_URET, INSTR_WFI, INSTR_XOR, INSTR_XORI} Instr_t;
 
 
   always_ff @(posedge clk)
