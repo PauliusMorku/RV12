@@ -309,7 +309,7 @@ prove:
 */
 
 
-property test;
+property step;
 dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
 for timepoints:
 
@@ -360,10 +360,9 @@ for timepoints:
 	t2_IF_tx_f = t + 0..examination_window waits_for complete mg_t2_IF_tx,
 	t2_IF_tx_l1 = t + 0..examination_window waits_for complete next(!t2_IF_tx_wait),
 	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_n),
-	t2_IF_tx_r = t + 1..examination_window waits_for complete (mg_t2_IF_tx || (next(IF_tcnt) > 2)),
 
 	t2_IF_wn_l = t2_IF_rx_n,
-	t2_IF_wn_r = t2_IF_tx_r,
+	t2_IF_wn_r = t + 0..examination_window waits_for complete (next(IF_tcnt) > 2),
 
 	t2_ID_rx_f = t + 0..examination_window waits_for complete mg_t2_ID_rx,
 	t2_ID_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_rx_wait),
@@ -373,10 +372,9 @@ for timepoints:
 	t2_ID_tx_f = t + 0..examination_window waits_for complete mg_t2_ID_tx,
 	t2_ID_tx_l1 = t + 0..examination_window waits_for complete next(!t2_ID_tx_wait),
 	t2_ID_tx_l = max_timepoint(t2_ID_tx_l1, t2_ID_rx_l),
-	t2_ID_tx_r = t + 1..examination_window waits_for complete (mg_t2_ID_tx || (next(ID_tcnt) > 2)),
 
 	t2_ID_wn_l = t2_ID_rx_l,
-	t2_ID_wn_r = t2_ID_tx_r,
+	t2_ID_wn_r = t + 0..examination_window waits_for complete (next(ID_tcnt) > 2),
 
 	t2_EX_rx_f = t + 0..examination_window waits_for complete mg_t2_EX_rx,
 	t2_EX_rx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_rx_wait),
@@ -386,10 +384,9 @@ for timepoints:
 	t2_EX_tx_f = t + 0..examination_window waits_for complete mg_t2_EX_tx,
 	t2_EX_tx_l1 = t + 0..examination_window waits_for complete next(!t2_EX_tx_wait),
 	t2_EX_tx_l = max_timepoint(t2_EX_tx_l1, t2_EX_rx_l),
-	t2_EX_tx_r = t + 1..examination_window waits_for complete (mg_t2_EX_tx || (next(EX_tcnt) > 2)),
 
 	t2_EX_wn_l = t2_EX_rx_l,
-	t2_EX_wn_r = t2_EX_tx_r,
+	t2_EX_wn_r = t + 0..examination_window waits_for complete (next(EX_tcnt) > 2),
 
 	t2_ME_rx_f = t + 0..examination_window waits_for complete mg_t2_ME_rx,
 	t2_ME_rx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_rx_wait),
@@ -399,20 +396,19 @@ for timepoints:
 	t2_ME_tx_f = t + 0..examination_window waits_for complete mg_t2_ME_tx,
 	t2_ME_tx_l1 = t + 0..examination_window waits_for complete next(!t2_ME_tx_wait),
 	t2_ME_tx_l = max_timepoint(t2_ME_tx_l1, t2_ME_rx_l),
-	t2_ME_tx_r = t + 1..examination_window waits_for complete (mg_t2_ME_tx || (next(ME_tcnt) > 2)),
 
 	t2_ME_wn_l = t2_ME_rx_l,
-	t2_ME_wn_r = t2_ME_tx_r,
+	t2_ME_wn_r = t + 0..examination_window waits_for complete (next(ME_tcnt) > 2),
 
 	t2_WB_rx_f = t + 0..examination_window waits_for complete mg_t2_WB_rx,
 	t2_WB_rx_l1 = t + 0..examination_window waits_for complete next(!t2_WB_rx_wait),
 	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_ME_tx_l),
 	t2_WB_rx_l = max_timepoint(t2_WB_rx_l2, tl_WB_tx_l), // special case since it is the last pipeline stage
 
-	t2_WB_tx_r = t + 1..examination_window waits_for complete (mg_t2_WB_tx || (next(WB_tcnt) > 2)),
+	t2_WB_tx_f = t + 0..examination_window waits_for complete mg_t2_WB_tx,
 
 	t2_WB_wn_l = t2_WB_rx_l,
-	t2_WB_wn_r = t2_WB_tx_r,
+	t2_WB_wn_r = t + 0..examination_window waits_for complete (next(WB_tcnt) > 2),
 
 
 	// Detect flushing cases
@@ -464,17 +460,17 @@ freeze:
 	at_t2_WB_flush = mg_t2_WB_flush@t2_WB_flush,
 
 
-	at_t2_IF_tx_instr = IF_instr@t2_IF_tx_r,
-	at_t2_ID_tx_instr = ID_instr@t2_ID_tx_r,
-	at_t2_EX_tx_instr = EX_instr@t2_EX_tx_r,
-	at_t2_ME_tx_instr = ME_instr@t2_ME_tx_r,
-	at_t2_WB_tx_instr = WB_instr@t2_WB_tx_r,
+	at_t2_IF_tx_instr = IF_instr@t2_IF_tx_f,
+	at_t2_ID_tx_instr = ID_instr@t2_ID_tx_f,
+	at_t2_EX_tx_instr = EX_instr@t2_EX_tx_f,
+	at_t2_ME_tx_instr = ME_instr@t2_ME_tx_f,
+	at_t2_WB_tx_instr = WB_instr@t2_WB_tx_f,
 
-	at_t2_IF_tx_pc = IF_pc@t2_IF_tx_r,
-	at_t2_ID_tx_pc = ID_pc@t2_ID_tx_r,
-	at_t2_EX_tx_pc = EX_pc@t2_EX_tx_r,
-	at_t2_ME_tx_pc = ME_pc@t2_ME_tx_r,
-	at_t2_WB_tx_pc = WB_pc@t2_WB_tx_r,
+	at_t2_IF_tx_pc = IF_pc@t2_IF_tx_f,
+	at_t2_ID_tx_pc = ID_pc@t2_ID_tx_f,
+	at_t2_EX_tx_pc = EX_pc@t2_EX_tx_f,
+	at_t2_ME_tx_pc = ME_pc@t2_ME_tx_f,
+	at_t2_WB_tx_pc = WB_pc@t2_WB_tx_f,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
@@ -500,7 +496,7 @@ assume:
 	during[t,t+examination_window]: t2_flush == (at_t2_IF_flush || at_t2_ID_flush || at_t2_EX_flush || at_t2_ME_flush || at_t2_WB_flush);
 	//during[t,t+examination_window]: t3_flush == (at_t3_IF_flush || at_t3_ID_flush || at_t3_EX_flush || at_t3_ME_flush || at_t3_WB_flush);
 
-
+	// Connect transaction flag variables
 	during[t,tl_IF_tx_f]: tl_IF_tx_wait == at_tl_IF_tx_exist;
 	during[tl_IF_tx_f+1,t+examination_window]: !tl_IF_tx_wait;
 
@@ -589,15 +585,15 @@ prove:
 */
 	// Prove right hook
 	at t2_IF_rx_n: mg_t2_IF_rx;
-	at t2_IF_tx_r: mg_t2_IF_tx;
-	at t2_ID_rx_l: mg_t2_ID_rx;
-	at t2_ID_tx_r: mg_t2_ID_tx;
-	at t2_EX_rx_l: mg_t2_EX_rx;
-	at t2_EX_tx_r: mg_t2_EX_tx;
-	at t2_ME_rx_l: mg_t2_ME_rx;
-	at t2_ME_tx_r: mg_t2_ME_tx;
-	at t2_WB_rx_l: mg_t2_WB_rx;
-	at t2_WB_tx_r: mg_t2_WB_tx;
+	at t2_IF_tx_f: mg_t2_IF_tx;
+	at t2_ID_rx_f: mg_t2_ID_rx;
+	at t2_ID_tx_f: mg_t2_ID_tx;
+	at t2_EX_rx_f: mg_t2_EX_rx;
+	at t2_EX_tx_f: mg_t2_EX_tx;
+	at t2_ME_rx_f: mg_t2_ME_rx;
+	at t2_ME_tx_f: mg_t2_ME_tx;
+	at t2_WB_rx_f: mg_t2_WB_rx;
+	at t2_WB_tx_f: mg_t2_WB_tx;
 
 
 end property;
