@@ -116,11 +116,11 @@ module top #(
   input                            t2_WB_rx_wait,
 
   // For debugging
-  input Instr_t if_instr_enum,
-  input Instr_t id_instr_enum,
-  input Instr_t ex_instr_enum,
-  input Instr_t me_instr_enum,
-  input Instr_t wb_instr_enum
+  input Instr_t IF_instr_enum,
+  input Instr_t ID_instr_enum,
+  input Instr_t EX_instr_enum,
+  input Instr_t ME_instr_enum,
+  input Instr_t WB_instr_enum
 );
 
 
