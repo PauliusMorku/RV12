@@ -284,29 +284,29 @@ TODO:
 
 */
 
-macro unsigned examination_window := 25 end macro;
+macro unsigned examination_window := 24 end macro;
 
 property window_check;
 dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
-/*
+
 for timepoints:
-	t2_IF_tx = t + 0..examination_window waits_for complete mg_t2_IF_tx,
-	t2_ID_tx = t + 0..examination_window waits_for complete mg_t2_ID_tx,
-	t2_EX_tx = t + 0..examination_window waits_for complete mg_t2_EX_rx,
-	t2_ME_tx = t + 0..examination_window waits_for complete mg_t2_ME_rx,
-	t2_WB_tx = t + 0..examination_window waits_for complete mg_t2_WB_rx,
+	t2_IF_tx_f = t + 0..examination_window waits_for complete mg_t2_IF_tx,
+	t2_ID_tx_f = t + 0..examination_window waits_for complete mg_t2_ID_tx,
+	t2_EX_tx_f = t + 0..examination_window waits_for complete mg_t2_EX_tx,
+	t2_ME_tx_f = t + 0..examination_window waits_for complete mg_t2_ME_tx,
+	t2_WB_tx_f = t + 0..examination_window waits_for complete mg_t2_WB_tx,
 
 	t_dummy = t; // last dummy line (for the semicolon)
 
 freeze:
-	at_t2_IF_tx = mg_t2_IF_tx@t2_IF_tx,
-	at_t2_ID_tx = mg_t2_ID_tx@t2_ID_tx,
-	at_t2_EX_tx = mg_t2_EX_tx@t2_EX_tx,
-	at_t2_ME_tx = mg_t2_ME_tx@t2_ME_tx,
-	at_t2_WB_tx = mg_t2_WB_tx@t2_WB_tx,
+	at_t2_IF_tx_exist = mg_t2_IF_tx@t2_IF_tx_f,
+	at_t2_ID_tx_exist = mg_t2_ID_tx@t2_ID_tx_f,
+	at_t2_EX_tx_exist = mg_t2_EX_tx@t2_EX_tx_f,
+	at_t2_ME_tx_exist = mg_t2_ME_tx@t2_ME_tx_f,
+	at_t2_WB_tx_exist = mg_t2_WB_tx@t2_WB_tx_f,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
-*/
+
 assume:
 	// Need separate property to check each stage tx case
 	// TODO: Find a simple way to combine these assumptions?
@@ -325,11 +325,36 @@ assume:
 
 	at t+examination_window: mg_t2_ME_tx;
 	during[t,t+examination_window-1]: !mg_t2_ME_tx;
-*/
+
 	at t+examination_window: mg_t2_WB_tx;
 	during[t,t+examination_window-1]: !mg_t2_WB_tx;
-/*
+
 */
+
+	at t+examination_window: (
+			fell(next(t2_IF_tx_wait)) || 
+			fell(next(t2_ID_tx_wait)) || 
+			fell(next(t2_EX_tx_wait)) || 
+			fell(next(t2_ME_tx_wait)) || 
+			fell(next(t2_WB_tx_wait))
+			);
+
+	during[t,t2_IF_tx_f]: t2_IF_tx_wait == at_t2_IF_tx_exist;
+	during[t2_IF_tx_f+1,t+examination_window]: !t2_IF_tx_wait;
+
+	during[t,t2_ID_tx_f]: t2_ID_tx_wait == at_t2_ID_tx_exist;
+	during[t2_ID_tx_f+1,t+examination_window]: !t2_ID_tx_wait;
+
+	during[t,t2_EX_tx_f]: t2_EX_tx_wait == at_t2_EX_tx_exist;
+	during[t2_EX_tx_f+1,t+examination_window]: !t2_EX_tx_wait;
+
+	during[t,t2_ME_tx_f]: t2_ME_tx_wait == at_t2_ME_tx_exist;
+	during[t2_ME_tx_f+1,t+examination_window]: !t2_ME_tx_wait;
+
+	during[t,t2_WB_tx_f]: t2_WB_tx_wait == at_t2_WB_tx_exist;
+	during[t2_WB_tx_f+1,t+examination_window]: !t2_WB_tx_wait;
+
+
     // Connect token counters
 	during[t,t+examination_window]: IF_tcnt_inc == m_IF_rx;
 	during[t,t+examination_window]: ID_tcnt_inc == m_ID_rx;

@@ -109,6 +109,7 @@ module top #(
   input                            t2_ME_rx_wait,
   input                            t2_ME_tx_wait,
   input                            t2_WB_rx_wait,
+  input                            t2_WB_tx_wait,
 
   // For debugging
   input Instr_t IF_instr_enum,
