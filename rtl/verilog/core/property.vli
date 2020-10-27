@@ -1,4 +1,3 @@
-macro unsigned examination_window := 25 end macro;
 
 macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;// && (next(c/if_unit/id_stall) == 0)) end macro;
 macro logic m_ID_rx := (/*(c/id_unit/if_bubble == 0) && */(c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
@@ -29,6 +28,8 @@ macro logic m_ID_flush := 0 end macro;
 macro logic m_EX_flush := c/ex_units/bu_flush end macro;
 macro logic m_ME_flush := 0 end macro;
 macro logic m_WB_flush := 0 end macro;
+
+macro logic m_rst := !c/rstn end macro;
 
 macro unsigned IF_instr := c/if_unit/if_instr end macro;
 macro unsigned ID_instr := c/id_unit/id_instr end macro;
@@ -89,88 +90,120 @@ end macro;
 */
 
 constraint c_no_reset :=
-	c/rstn == 1;
+	!m_rst;
 end constraint;
 
 constraint c_no_debug :=
-	c/dbg_stall == 0 &&
-	c/du_flush == 0 &&
-	c/du_stall == 0 &&
-	c/du_stall_dly == 0;
+	if (!m_rst)
+		c/dbg_stall == 0 &&
+		c/du_flush == 0 &&
+		c/du_stall == 0 &&
+		c/du_stall_dly == 0;
+	endif;
 end constraint;
 
 constraint c_no_st_flush :=
-	((c/st_flush == 0) || prev(c/rstn == 0));
+	if (!m_rst)
+		((c/st_flush == 0) || prev(m_rst));
+	endif;
 end constraint;
 
 constraint c_no_bu_flush :=
-	((c/bu_flush == 0) || prev(c/rstn == 0));
+	if (!m_rst)
+		((c/bu_flush == 0) || prev(m_rst));
+	endif;
 end constraint;
 
-constraint no_if_stall_nxt_pc :=
-	c/if_stall_nxt_pc == 0;
+constraint c_no_if_stall_nxt_pc :=
+	if (!m_rst)
+		c/if_stall_nxt_pc == 0;
+	endif;
 end constraint;
 
 constraint c_if_stall_nxt_pc_fairness :=
-	exists i in 0..3:
-		next(c/if_stall_nxt_pc,i) == 0;
-	end exists;
+	if (!m_rst)
+		exists i in 0..3:
+			next(c/if_stall_nxt_pc,i) == 0;
+		end exists;
+	endif;
 end constraint;
 
-constraint if_nop :=
-	c/if_instr == 32'h00000013;
+constraint c_if_nop :=
+	if (!m_rst)
+		c/if_instr == 32'h00000013;
+	endif;
 end constraint;
 
-constraint id_nop :=
-	c/id_instr == 32'h00000013;
+constraint c_id_nop :=
+	if (!m_rst)
+		c/id_instr == 32'h00000013;
+	endif;
 end constraint;
 
-constraint ex_nop :=
-	c/ex_instr == 32'h00000013;
+constraint c_ex_nop :=
+	if (!m_rst)
+		c/ex_instr == 32'h00000013;
+	endif;
 end constraint;
 
-constraint no_ex_bubble :=
-	c/ex_bubble == 0;
+constraint c_no_ex_bubble :=
+	if (!m_rst)
+		c/ex_bubble == 0;
+	endif;
 end constraint;
 
-constraint dmem_ready :=
-	dmem_ack == 1;
+constraint c_dmem_ready :=
+	if (!m_rst)
+		dmem_ack == 1;
+	endif;
 end constraint;
 
 constraint c_dmem_fairness :=
-	exists i in 0..3:
-		next(dmem_ack,i) == 1;
-	end exists;
+	if (!m_rst)
+		exists i in 0..3:
+			next(dmem_ack,i) == 1;
+		end exists;
+	endif;
 end constraint;
 
 constraint c_if_parcel_valid :=
-	((c/if_unit/pd_bubble == 0) || prev(c/rstn == 0) || prev(c/rstn == 0, 2)); 
+	if (!m_rst)
+		((c/if_unit/pd_bubble == 0) || prev(m_rst) || prev(m_rst, 2));
+	endif;
 end constraint;
 
 constraint c_if_parcel_valid2 :=
-	(c/if_unit/if_parcel_misaligned == 0) &&
-	(c/if_unit/if_parcel_page_fault == 0);
+	if (!m_rst)
+		(c/if_unit/if_parcel_misaligned == 0) &&
+		(c/if_unit/if_parcel_page_fault == 0);
+	endif;
 end constraint;
 
 constraint c_if_parcel_valid_fairness :=
-	exists i in 0..4:
-		next(c/if_unit/pd_bubble,i) == 0;
-	end exists;
+	if (!m_rst)
+		exists i in 0..4:
+			next(c/if_unit/pd_bubble,i) == 0;
+		end exists;
+	endif;
 end constraint;
 
 constraint c_no_exception :=
-	c/if_exception == 0 &&
-	c/ex_exception == 0 &&
-	c/mem_exception == 0 &&
-	c/wb_exception == 0 &&
-	c/id_exception == 0;
+	if (!m_rst)
+		c/if_exception == 0 &&
+		c/ex_exception == 0 &&
+		c/mem_exception == 0 &&
+		c/wb_exception == 0 &&
+		c/id_exception == 0;
+	endif;
 end constraint;
 
-constraint no_id_hazard :=
-	(((c/id_unit/if_src1 != c/id_unit/id_dst) || prev(c/rstn == 0)) &&
-	((c/id_unit/if_src2 != c/id_unit/id_dst) || prev(c/rstn == 0)) &&
-	((c/id_unit/if_src1 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)) &&
-	((c/id_unit/if_src2 != c/id_unit/ex_dst) || prev(c/rstn == 0, 2)));
+constraint c_no_id_hazard :=
+	if (!m_rst)
+		(((c/id_unit/if_src1 != c/id_unit/id_dst) || prev(m_rst)) &&
+		((c/id_unit/if_src2 != c/id_unit/id_dst) || prev(m_rst)) &&
+		((c/id_unit/if_src1 != c/id_unit/ex_dst) || prev(m_rst, 2)) &&
+		((c/id_unit/if_src2 != c/id_unit/ex_dst) || prev(m_rst, 2)));
+	endif;
 end constraint;
 
 
@@ -198,11 +231,11 @@ macro logic mg_t0_EX_tx := (m_EX_tx && (EX_tcnt == 0) && !t0_EX_rx_wait) end mac
 macro logic mg_t0_ME_tx := (m_ME_tx && (ME_tcnt == 0) && !t0_ME_rx_wait) end macro;
 macro logic mg_t0_WB_tx := (m_WB_tx && (WB_tcnt == 0) && !t0_WB_rx_wait) end macro;
 
-macro logic mg_t1_IF_rx := next(IF_tcnt == 1) end macro;
-macro logic mg_t1_ID_rx := next(ID_tcnt == 1) end macro;
-macro logic mg_t1_EX_rx := next(EX_tcnt == 1) end macro;
-macro logic mg_t1_ME_rx := next(ME_tcnt == 1) end macro;
-macro logic mg_t1_WB_rx := next(WB_tcnt == 1) end macro;
+macro logic mg_t1_IF_rx := ((IF_tcnt != 1) && next(IF_tcnt == 1)) end macro;
+macro logic mg_t1_ID_rx := ((ID_tcnt != 1) && next(ID_tcnt == 1)) end macro;
+macro logic mg_t1_EX_rx := ((EX_tcnt != 1) && next(EX_tcnt == 1)) end macro;
+macro logic mg_t1_ME_rx := ((ME_tcnt != 1) && next(ME_tcnt == 1)) end macro;
+macro logic mg_t1_WB_rx := ((WB_tcnt != 1) && next(WB_tcnt == 1)) end macro;
 
 macro logic mg_t1_IF_tx := (m_IF_tx && (IF_tcnt == 1)) end macro;
 macro logic mg_t1_ID_tx := (m_ID_tx && (ID_tcnt == 1)) end macro;
@@ -210,11 +243,11 @@ macro logic mg_t1_EX_tx := (m_EX_tx && (EX_tcnt == 1)) end macro;
 macro logic mg_t1_ME_tx := (m_ME_tx && (ME_tcnt == 1)) end macro;
 macro logic mg_t1_WB_tx := (m_WB_tx && (WB_tcnt == 1)) end macro;
 
-macro logic mg_t2_IF_rx := next(IF_tcnt == 2) end macro;
-macro logic mg_t2_ID_rx := next(ID_tcnt == 2) end macro;
-macro logic mg_t2_EX_rx := next(EX_tcnt == 2) end macro;
-macro logic mg_t2_ME_rx := next(ME_tcnt == 2) end macro;
-macro logic mg_t2_WB_rx := next(WB_tcnt == 2) end macro;
+macro logic mg_t2_IF_rx := ((IF_tcnt != 2) && next(IF_tcnt == 2)) end macro;
+macro logic mg_t2_ID_rx := ((IF_tcnt != 2) && next(ID_tcnt == 2)) end macro;
+macro logic mg_t2_EX_rx := ((IF_tcnt != 2) && next(EX_tcnt == 2)) end macro;
+macro logic mg_t2_ME_rx := ((IF_tcnt != 2) && next(ME_tcnt == 2)) end macro;
+macro logic mg_t2_WB_rx := ((IF_tcnt != 2) && next(WB_tcnt == 2)) end macro;
 
 macro logic mg_t2_IF_tx := (m_IF_tx && (IF_tcnt == 2)) end macro;
 macro logic mg_t2_ID_tx := (m_ID_tx && (ID_tcnt == 2)) end macro;
@@ -222,9 +255,9 @@ macro logic mg_t2_EX_tx := (m_EX_tx && (EX_tcnt == 2)) end macro;
 macro logic mg_t2_ME_tx := (m_ME_tx && (ME_tcnt == 2)) end macro;
 macro logic mg_t2_WB_tx := (m_WB_tx && (WB_tcnt == 2)) end macro;
 
-macro logic mg_t3_IF_rx := next(IF_tcnt == 3) end macro;
-macro logic mg_t4_IF_rx := next(IF_tcnt == 4) end macro;
-macro logic mg_t5_IF_rx := next(IF_tcnt == 5) end macro;
+macro logic mg_t3_IF_rx := ((IF_tcnt != 3) && next(IF_tcnt == 3)) end macro;
+macro logic mg_t4_IF_rx := ((IF_tcnt != 4) && next(IF_tcnt == 4)) end macro;
+macro logic mg_t5_IF_rx := ((IF_tcnt != 5) && next(IF_tcnt == 5)) end macro;
 
 // TODO if there is skipped stage flush can be still triggered
 macro logic mg_t0_ID_flush := (m_ID_flush && (ID_tcnt == 0)) end macro;
@@ -273,6 +306,60 @@ prove:
 	within[t-examination_window: t-1]: stage_rx and token_n
 	within[t-examination_window: t-1]: IF_stage_rx and token_n // 
 */
+
+macro unsigned examination_window := 30 end macro;
+
+property window_check;
+dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+for timepoints:
+	t2_IF_tx = t + 0..examination_window waits_for complete mg_t2_IF_tx,
+	t2_ID_tx = t + 0..examination_window waits_for complete mg_t2_ID_tx,
+	t2_EX_tx = t + 0..examination_window waits_for complete mg_t2_EX_rx,
+	t2_ME_tx = t + 0..examination_window waits_for complete mg_t2_ME_rx,
+	t2_WB_tx = t + 0..examination_window waits_for complete mg_t2_WB_rx,
+
+	t_dummy = t; // last dummy line (for the semicolon)
+
+freeze:
+	at_t2_IF_tx = mg_t2_IF_tx@t2_IF_tx,
+	at_t2_ID_tx = mg_t2_ID_tx@t2_ID_tx,
+	at_t2_EX_tx = mg_t2_EX_tx@t2_EX_tx,
+	at_t2_ME_tx = mg_t2_ME_tx@t2_ME_tx,
+	at_t2_WB_tx = mg_t2_WB_tx@t2_WB_tx,
+
+	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
+
+assume:
+	at t+examination_window: (at_t2_IF_tx || at_t2_ID_tx || at_t2_EX_tx || at_t2_ME_tx || at_t2_WB_tx);
+	//at t+examination_window: mg_t2_WB_tx;
+	//during[t,t+examination_window-1]: !mg_t2_WB_tx;
+
+    // Connect token counters
+	during[t,t+examination_window]: IF_tcnt_inc == m_IF_rx;
+	during[t,t+examination_window]: ID_tcnt_inc == m_ID_rx;
+	during[t,t+examination_window]: EX_tcnt_inc == m_EX_rx;
+	during[t,t+examination_window]: ME_tcnt_inc == m_ME_rx;
+	during[t,t+examination_window]: WB_tcnt_inc == m_WB_rx;
+
+	// Configure reset overlap
+	during[t,t+examination_window]: !rose(m_rst);
+	during[t,t+examination_window]: if (m_rst) IF_tcnt == 0 endif;
+	during[t,t+examination_window]: if (m_rst) ID_tcnt == 0 endif;
+	during[t,t+examination_window]: if (m_rst) EX_tcnt == 0 endif;
+	during[t,t+examination_window]: if (m_rst) ME_tcnt == 0 endif;
+	during[t,t+examination_window]: if (m_rst) WB_tcnt == 0 endif;
+
+	// Prevent counter overflowing
+	during[t,t+examination_window]: next(IF_tcnt) >= IF_tcnt;
+	during[t,t+examination_window]: next(ID_tcnt) >= ID_tcnt;
+	during[t,t+examination_window]: next(EX_tcnt) >= EX_tcnt;
+	during[t,t+examination_window]: next(ME_tcnt) >= ME_tcnt;
+	during[t,t+examination_window]: next(WB_tcnt) >= WB_tcnt;
+
+prove:
+	within[t,t+examination_window]: mg_t2_IF_rx;
+
+end property;
 
 
 property base;
