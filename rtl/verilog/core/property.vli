@@ -244,10 +244,10 @@ macro logic mg_t1_ME_tx := (m_ME_tx && (ME_tcnt == 1)) end macro;
 macro logic mg_t1_WB_tx := (m_WB_tx && (WB_tcnt == 1)) end macro;
 
 macro logic mg_t2_IF_rx := ((IF_tcnt != 2) && next(IF_tcnt == 2)) end macro;
-macro logic mg_t2_ID_rx := ((IF_tcnt != 2) && next(ID_tcnt == 2)) end macro;
-macro logic mg_t2_EX_rx := ((IF_tcnt != 2) && next(EX_tcnt == 2)) end macro;
-macro logic mg_t2_ME_rx := ((IF_tcnt != 2) && next(ME_tcnt == 2)) end macro;
-macro logic mg_t2_WB_rx := ((IF_tcnt != 2) && next(WB_tcnt == 2)) end macro;
+macro logic mg_t2_ID_rx := ((ID_tcnt != 2) && next(ID_tcnt == 2)) end macro;
+macro logic mg_t2_EX_rx := ((EX_tcnt != 2) && next(EX_tcnt == 2)) end macro;
+macro logic mg_t2_ME_rx := ((ME_tcnt != 2) && next(ME_tcnt == 2)) end macro;
+macro logic mg_t2_WB_rx := ((WB_tcnt != 2) && next(WB_tcnt == 2)) end macro;
 
 macro logic mg_t2_IF_tx := (m_IF_tx && (IF_tcnt == 2)) end macro;
 macro logic mg_t2_ID_tx := (m_ID_tx && (ID_tcnt == 2)) end macro;
@@ -278,39 +278,17 @@ macro logic mg_t5_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush 
 
 /*
 TODO:
-	-try to use bubbles to ommit use of stages
 	-try to match windows exactly (remove overlap)
 		-hopefully by now only end of the window is not alligned
 
 
 */
 
-
-/*
-TODO: prove that window is sufficient
-assume:
-	at t: stage_tx and token_n
-prove:
-	//rx has occured within the window 
-	within[t-examination_window: t-1]: stage_rx and token_n
-	within[t-examination_window: t-1]: IF_stage_rx and token_n // 
-*/
-
-
-/*
-TODO: prove that window is sufficient
-assume:
-	at t: stage_flush and token_n
-prove:
-	//rx has occured within the window 
-	within[t-examination_window: t-1]: stage_rx and token_n
-	within[t-examination_window: t-1]: IF_stage_rx and token_n // 
-*/
-
-macro unsigned examination_window := 30 end macro;
+macro unsigned examination_window := 25 end macro;
 
 property window_check;
 dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+/*
 for timepoints:
 	t2_IF_tx = t + 0..examination_window waits_for complete mg_t2_IF_tx,
 	t2_ID_tx = t + 0..examination_window waits_for complete mg_t2_ID_tx,
@@ -328,12 +306,30 @@ freeze:
 	at_t2_WB_tx = mg_t2_WB_tx@t2_WB_tx,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
-
+*/
 assume:
-	at t+examination_window: (at_t2_IF_tx || at_t2_ID_tx || at_t2_EX_tx || at_t2_ME_tx || at_t2_WB_tx);
-	//at t+examination_window: mg_t2_WB_tx;
-	//during[t,t+examination_window-1]: !mg_t2_WB_tx;
+	// Need separate property to check each stage tx case
+	// TODO: Find a simple way to combine these assumptions?
+	// Note that each tx has to be the first occurance otherwise the property is not correct
+	// Use floating inputs?
+/*
 
+	at t+examination_window: mg_t2_IF_tx;
+	during[t,t+examination_window-1]: !mg_t2_IF_tx;
+
+	at t+examination_window: mg_t2_ID_tx;
+	during[t,t+examination_window-1]: !mg_t2_ID_tx;
+
+	at t+examination_window: mg_t2_EX_tx;
+	during[t,t+examination_window-1]: !mg_t2_EX_tx;
+
+	at t+examination_window: mg_t2_ME_tx;
+	during[t,t+examination_window-1]: !mg_t2_ME_tx;
+*/
+	at t+examination_window: mg_t2_WB_tx;
+	during[t,t+examination_window-1]: !mg_t2_WB_tx;
+/*
+*/
     // Connect token counters
 	during[t,t+examination_window]: IF_tcnt_inc == m_IF_rx;
 	during[t,t+examination_window]: ID_tcnt_inc == m_ID_rx;
@@ -357,7 +353,7 @@ assume:
 	during[t,t+examination_window]: next(WB_tcnt) >= WB_tcnt;
 
 prove:
-	within[t,t+examination_window]: mg_t2_IF_rx;
+	within[t,t+examination_window]: mg_t1_IF_rx;
 
 end property;
 
@@ -691,7 +687,7 @@ prove:
 	at t1_WB_tx_r: mg_t1_WB_tx;
 */
 	// Prove right hook
-	at t2_IF_rx_n: mg_t2_IF_rx;
+	/*at t2_IF_rx_n: mg_t2_IF_rx;
 	at t2_IF_tx_f: mg_t2_IF_tx;
 	at t2_ID_rx_f: mg_t2_ID_rx;
 	at t2_ID_tx_f: mg_t2_ID_tx;
@@ -699,7 +695,7 @@ prove:
 	at t2_EX_tx_f: mg_t2_EX_tx;
 	at t2_ME_rx_f: mg_t2_ME_rx;
 	at t2_ME_tx_f: mg_t2_ME_tx;
-	at t2_WB_rx_f: mg_t2_WB_rx;
+	at t2_WB_rx_f: mg_t2_WB_rx;*/
 	at t2_WB_tx_f: mg_t2_WB_tx;
 
 
