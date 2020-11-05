@@ -33,7 +33,7 @@
 #####################################################################
 
 
-ROOT_DIR=/home/pmorku/workspace/RV12/
+ROOT_DIR=/home/morkunas/workspace/RV12/
 
 -include $(ROOT_DIR)/sim/ahb3lite/regression/bin/Makefile.include
 
