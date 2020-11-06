@@ -39,6 +39,7 @@ set make_copy 0
 # ITL property files, similarly named TCL files will be sourced automatically
 ################################################################################################
 set itl_property_files {
+	RV12/rtl/verilog/core/commons.vli
 	RV12/rtl/verilog/core/property.vli
 	RV12/rtl/verilog/core/core_functions.vli
 }

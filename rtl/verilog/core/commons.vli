@@ -1,0 +1,288 @@
+macro logic m_rst := !c/rstn end macro;
+/*
+macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;
+macro logic m_ID_rx := ((c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
+macro logic m_EX_rx := ((c/ex_units/ex_stall == 0)) end macro;
+macro logic m_ME_rx := ((c/mem_unit/wb_stall == 0)) end macro; // either no bubble or instruction finished in EX stage (if it stalls then it is still computing)
+macro logic m_WB_rx := ((c/wb_unit/wb_stall_o == 0)) end macro;
+
+macro logic m_IF_tx := m_ID_rx end macro;
+macro logic m_ID_tx := m_EX_rx end macro;
+macro logic m_EX_tx := m_ME_rx end macro;
+macro logic m_ME_tx := m_WB_rx end macro;
+macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
+*/
+/*
+macro logic m_IF_rx := ((c/if_unit/id_stall == 0) && (next(c/if_unit/if_bubble) == 0)) end macro;
+macro logic m_ID_rx := ((c/id_unit/if_bubble == 0) && (c/id_unit/stall == 0) && (c/id_unit/id_stall == 0)) end macro;
+macro logic m_EX_rx := ((c/ex_units/id_bubble == 0) && (c/ex_units/ex_stall == 0)) end macro;
+macro logic m_ME_rx := ((c/mem_unit/ex_bubble == 0) && (c/mem_unit/wb_stall == 0)) end macro;
+macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/wb_stall_o == 0)) end macro;
+
+macro logic m_IF_tx := m_ID_rx end macro;
+macro logic m_ID_tx := m_EX_rx end macro;
+macro logic m_EX_tx := m_ME_rx end macro;
+macro logic m_ME_tx := m_WB_rx end macro;
+macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
+*/
+
+macro logic m_IF_rx := ((c/if_unit/if_bubble == 0) && (c/if_unit/id_stall == 0)) end macro;
+macro logic m_IF_tx := m_IF_rx end macro;
+macro logic m_ID_rx := ((c/id_unit/if_bubble == 0) && (c/id_unit/id_stall == 0) && (c/id_unit/stall == 0)) end macro;
+macro logic m_ID_tx := ((c/id_unit/id_bubble == 0) && (c/id_unit/ex_stall == 0)) end macro;
+macro logic m_EX_rx := ((c/ex_units/id_bubble == 0) && (c/ex_units/ex_stall == 0))  end macro;
+macro logic m_EX_tx := ((c/ex_units/ex_bubble == 0) && (c/ex_units/wb_stall == 0)) end macro;
+macro logic m_ME_rx := ((c/mem_unit/ex_bubble == 0) && (c/mem_unit/wb_stall == 0)) end macro;
+macro logic m_ME_tx := ((c/mem_unit/mem_bubble == 0) && (c/mem_unit/wb_stall == 0)) end macro;
+macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/wb_stall_o == 0)) end macro;
+macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
+
+macro logic m_IF_flush := 0 end macro;
+macro logic m_ID_flush := 0 end macro;
+macro logic m_EX_flush := c/ex_units/bu_flush end macro;
+macro logic m_ME_flush := 0 end macro;
+macro logic m_WB_flush := 0 end macro;
+
+macro unsigned m_IF_instr := c/if_unit/if_instr end macro;
+macro unsigned m_ID_instr := c/id_unit/id_instr end macro;
+macro unsigned m_EX_instr := c/ex_units/ex_instr end macro;
+macro unsigned m_ME_instr := c/mem_unit/mem_instr end macro;
+macro unsigned m_WB_instr := c/wb_unit/wb_instr_o end macro;
+
+macro unsigned m_IF_pc := c/if_unit/if_pc end macro;
+macro unsigned m_ID_pc := c/id_unit/id_pc end macro;
+macro unsigned m_EX_pc := c/ex_units/ex_pc end macro;
+macro unsigned m_ME_pc := c/mem_unit/mem_pc end macro;
+macro unsigned m_WB_pc := c/wb_unit/wb_pc_o end macro;
+
+// Instruction filters are used to constrain the instructions that are read from the memory (to avoid illegal instructions and reduce computation complexity)
+macro bit instr_filter1(unsigned encodedInstr) := 
+	/*(getOpcode(encodedInstr) == OPCODE_I_L) ||
+	(getOpcode(encodedInstr) == OPCODE_S) ||
+	(getOpcode(encodedInstr) == OPCODE_I) ||*/
+	(getOpcode(encodedInstr) == OPCODE_R) /*||
+	(getOpcode(encodedInstr) == OPCODE_B)*/
+end macro;
+
+
+macro bit instr_filter2(unsigned encodedInstr) := 
+	/*(getInstr(encodedInstr) == LW_INSTR) ||
+	(getInstr(encodedInstr) == SW_INSTR) ||
+	(getInstr(encodedInstr) == ADDI_INSTR) ||*/
+	(getInstr(encodedInstr) == ADD_INSTR) /*||
+	(getInstr(encodedInstr) == BEQ_INSTR)*/
+end macro;
+
+/*
+macro instr_filter3(unsigned encodedInstr) := 
+	(getInstr(encodedInstr) == LW_INSTR && 
+	((getImmediate(encodedInstr) 	& 32'hFFFFFFFC) = 0) && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRDAddr(encodedInstr) 		& 32'hFFFFFFFC) = 0)) 
+	||
+	(getInstr(encodedInstr) == SW_INSTR && 
+	((getImmediate(encodedInstr) 	& 32'hFFFFFFFC) = 0) && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRS2Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0)) 
+	||
+	(getInstr(encodedInstr) == ADDI_INSTR && 
+	((getImmediate(encodedInstr) 	& 32'hFFFFFFFC) = 0) &&
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) &&  
+	((getRDAddr(encodedInstr) 		& 32'hFFFFFFFC) = 0)) 
+	||
+	(getInstr(encodedInstr) == ADD_INSTR && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRS2Addr(encodedInstr)		& 32'hFFFFFFFC) = 0) && 
+	((getRDAddr(encodedInstr) 		& 32'hFFFFFFFC) = 0))
+	||
+	(getInstr(encodedInstr) == BEQ_INSTR && 
+	((getRS1Addr(encodedInstr) 		& 32'hFFFFFFFC) = 0) && 
+	((getRS2Addr(encodedInstr)		& 32'hFFFFFFFC) = 0))
+end macro;
+*/
+
+constraint c_no_reset :=
+	!m_rst;
+end constraint;
+
+constraint c_no_debug :=
+	if (!m_rst)
+		c/dbg_stall == 0 &&
+		c/du_flush == 0 &&
+		c/du_stall == 0 &&
+		c/du_stall_dly == 0;
+	endif;
+end constraint;
+
+constraint c_no_st_flush :=
+	if (!m_rst)
+		((c/st_flush == 0) || prev(m_rst));
+	endif;
+end constraint;
+
+constraint c_no_bu_flush :=
+	if (!m_rst)
+		((c/bu_flush == 0) || prev(m_rst));
+	endif;
+end constraint;
+
+constraint c_no_if_stall_nxt_pc :=
+	if (!m_rst)
+		c/if_stall_nxt_pc == 0;
+	endif;
+end constraint;
+
+constraint c_if_stall_nxt_pc_fairness :=
+	if (!m_rst)
+		exists i in 0..3:
+			next(c/if_stall_nxt_pc,i) == 0;
+		end exists;
+	endif;
+end constraint;
+
+constraint c_if_nop :=
+	if (!m_rst)
+		c/if_instr == 32'h00000013;
+	endif;
+end constraint;
+
+constraint c_id_nop :=
+	if (!m_rst)
+		c/id_instr == 32'h00000013;
+	endif;
+end constraint;
+
+constraint c_ex_nop :=
+	if (!m_rst)
+		c/ex_instr == 32'h00000013;
+	endif;
+end constraint;
+
+constraint c_no_ex_bubble :=
+	if (!m_rst)
+		c/ex_bubble == 0;
+	endif;
+end constraint;
+
+constraint c_dmem_ready :=
+	if (!m_rst)
+		dmem_ack == 1;
+	endif;
+end constraint;
+
+constraint c_dmem_fairness :=
+	if (!m_rst)
+		exists i in 0..3:
+			next(dmem_ack,i) == 1;
+		end exists;
+	endif;
+end constraint;
+
+constraint c_if_parcel_valid :=
+	if (!m_rst)
+		((c/if_unit/pd_bubble == 0) || prev(m_rst) || prev(m_rst, 2));
+	endif;
+end constraint;
+
+constraint c_if_parcel_valid2 :=
+	if (!m_rst)
+		(c/if_unit/if_parcel_misaligned == 0) &&
+		(c/if_unit/if_parcel_page_fault == 0);
+	endif;
+end constraint;
+
+constraint c_if_parcel_valid_fairness :=
+	if (!m_rst)
+		exists i in 0..4:
+			next(c/if_unit/pd_bubble,i) == 0;
+		end exists;
+	endif;
+end constraint;
+
+constraint c_no_exception :=
+	if (!m_rst)
+		c/if_exception == 0 &&
+		c/ex_exception == 0 &&
+		c/mem_exception == 0 &&
+		c/wb_exception == 0 &&
+		c/id_exception == 0;
+	endif;
+end constraint;
+
+constraint c_no_id_hazard :=
+	if (!m_rst)
+		(((c/id_unit/if_src1 != c/id_unit/id_dst) || prev(m_rst)) &&
+		((c/id_unit/if_src2 != c/id_unit/id_dst) || prev(m_rst)) &&
+		((c/id_unit/if_src1 != c/id_unit/ex_dst) || prev(m_rst, 2)) &&
+		((c/id_unit/if_src2 != c/id_unit/ex_dst) || prev(m_rst, 2)));
+	endif;
+end constraint;
+
+
+// Macros that serve as helpers, eventually should be (g)enerated and not modified by the user
+
+// tl stands for last token
+macro logic mg_tl_IF_tx := (m_IF_tx && (IF_tcnt == 1)) end macro;
+macro logic mg_tl_ID_rx := (m_ID_rx && next(ID_tcnt <= 1) && next(!tl_IF_tx_wait)) end macro;
+macro logic mg_tl_ID_tx := (m_ID_tx && (ID_tcnt <= 1) && !tl_ID_rx_wait) end macro;
+macro logic mg_tl_EX_rx := (m_EX_rx && next(EX_tcnt <= 1) && next(!tl_ID_tx_wait)) end macro;
+macro logic mg_tl_EX_tx := (m_EX_tx && (EX_tcnt <= 1) && !tl_EX_rx_wait) end macro;
+macro logic mg_tl_ME_rx := (m_ME_rx && next(ME_tcnt <= 1) && next(!tl_EX_tx_wait)) end macro;
+macro logic mg_tl_ME_tx := (m_ME_tx && (ME_tcnt <= 1) && !tl_ME_rx_wait) end macro;
+macro logic mg_tl_WB_rx := (m_WB_rx && next(WB_tcnt <= 1) && next(!tl_ME_tx_wait)) end macro;
+macro logic mg_tl_WB_tx := (m_WB_tx && (WB_tcnt <= 1) && !tl_WB_rx_wait) end macro;
+
+
+macro logic mg_t0_EX_rx := (m_EX_rx && next(EX_tcnt == 0) && next(!t0_ID_tx_wait)) end macro;
+macro logic mg_t0_ME_rx := (m_ME_rx && next(ME_tcnt == 0) && next(!t0_EX_tx_wait)) end macro;
+macro logic mg_t0_WB_rx := (m_WB_rx && next(WB_tcnt == 0) && next(!t0_ME_tx_wait)) end macro;
+
+macro logic mg_t0_ID_tx := (m_ID_tx && (ID_tcnt == 0)) end macro;
+macro logic mg_t0_EX_tx := (m_EX_tx && (EX_tcnt == 0) && !t0_EX_rx_wait) end macro;
+macro logic mg_t0_ME_tx := (m_ME_tx && (ME_tcnt == 0) && !t0_ME_rx_wait) end macro;
+macro logic mg_t0_WB_tx := (m_WB_tx && (WB_tcnt == 0) && !t0_WB_rx_wait) end macro;
+
+macro logic mg_t1_IF_rx := ((IF_tcnt != 1) && next(IF_tcnt == 1)) end macro;
+macro logic mg_t1_ID_rx := ((ID_tcnt != 1) && next(ID_tcnt == 1)) end macro;
+macro logic mg_t1_EX_rx := ((EX_tcnt != 1) && next(EX_tcnt == 1)) end macro;
+macro logic mg_t1_ME_rx := ((ME_tcnt != 1) && next(ME_tcnt == 1)) end macro;
+macro logic mg_t1_WB_rx := ((WB_tcnt != 1) && next(WB_tcnt == 1)) end macro;
+
+macro logic mg_t1_IF_tx := (m_IF_tx && (IF_tcnt == 1)) end macro;
+macro logic mg_t1_ID_tx := (m_ID_tx && (ID_tcnt == 1)) end macro;
+macro logic mg_t1_EX_tx := (m_EX_tx && (EX_tcnt == 1)) end macro;
+macro logic mg_t1_ME_tx := (m_ME_tx && (ME_tcnt == 1)) end macro;
+macro logic mg_t1_WB_tx := (m_WB_tx && (WB_tcnt == 1)) end macro;
+
+macro logic mg_t2_IF_rx := ((IF_tcnt != 2) && next(IF_tcnt == 2)) end macro;
+macro logic mg_t2_ID_rx := ((ID_tcnt != 2) && next(ID_tcnt == 2)) end macro;
+macro logic mg_t2_EX_rx := ((EX_tcnt != 2) && next(EX_tcnt == 2)) end macro;
+macro logic mg_t2_ME_rx := ((ME_tcnt != 2) && next(ME_tcnt == 2)) end macro;
+macro logic mg_t2_WB_rx := ((WB_tcnt != 2) && next(WB_tcnt == 2)) end macro;
+
+macro logic mg_t2_IF_tx := (m_IF_tx && (IF_tcnt == 2)) end macro;
+macro logic mg_t2_ID_tx := (m_ID_tx && (ID_tcnt == 2)) end macro;
+macro logic mg_t2_EX_tx := (m_EX_tx && (EX_tcnt == 2)) end macro;
+macro logic mg_t2_ME_tx := (m_ME_tx && (ME_tcnt == 2)) end macro;
+macro logic mg_t2_WB_tx := (m_WB_tx && (WB_tcnt == 2)) end macro;
+
+macro logic mg_t3_IF_rx := ((IF_tcnt != 3) && next(IF_tcnt == 3)) end macro;
+macro logic mg_t4_IF_rx := ((IF_tcnt != 4) && next(IF_tcnt == 4)) end macro;
+macro logic mg_t5_IF_rx := ((IF_tcnt != 5) && next(IF_tcnt == 5)) end macro;
+
+// TODO if there is skipped stage flush can be still triggered
+macro logic mg_t0_ID_flush := (m_ID_flush && (ID_tcnt == 0)) end macro;
+macro logic mg_t0_EX_flush := (m_EX_flush && (EX_tcnt == 0)) end macro;
+macro logic mg_t0_ME_flush := (m_ME_flush && (ME_tcnt == 0)) end macro;
+macro logic mg_t0_WB_flush := (m_WB_flush && (WB_tcnt == 0)) end macro;
+
+macro logic mg_t1_ID_flush := (m_ID_flush && (ID_tcnt == 1)) end macro;
+macro logic mg_t1_EX_flush := (m_EX_flush && (EX_tcnt == 1)) end macro;
+macro logic mg_t1_ME_flush := (m_ME_flush && (ME_tcnt == 1)) end macro;
+macro logic mg_t1_WB_flush := (m_WB_flush && (WB_tcnt == 1)) end macro;
+
+macro logic mg_t1_flush := ((mg_t0_ID_flush || mg_t0_EX_flush || mg_t0_ME_flush || mg_t0_WB_flush) && (IF_tcnt > 0)) end macro;
+macro logic mg_t2_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 1)) end macro;
+macro logic mg_t3_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 2)) end macro;
+macro logic mg_t4_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 3)) end macro;
+macro logic mg_t5_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 4)) end macro;
