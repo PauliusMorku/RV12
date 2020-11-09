@@ -85,11 +85,17 @@ module top #(
   output                           dbg_bp,
 
   // Verification related signals
-  input                            IF_tcnt_inc,
-  input                            ID_tcnt_inc,
-  input                            EX_tcnt_inc,
-  input                            ME_tcnt_inc,
-  input                            WB_tcnt_inc,
+  input                            IF_trem,
+  input                            ID_trem,
+  input                            EX_trem,
+  input                            ME_trem,
+  input                            WB_trem,
+
+  input                            IF_wcnt_inc,
+  input                            ID_wcnt_inc,
+  input                            EX_wcnt_inc,
+  input                            ME_wcnt_inc,
+  input                            WB_wcnt_inc,
 
   input                            tl_IF_tx_wait,
   input                            tl_ID_rx_wait,
@@ -129,6 +135,11 @@ module top #(
   input Instr_t WB_instr_enum
 );
 
+  logic [5:0] IF_wcnt;
+  logic [5:0] ID_wcnt;
+  logic [5:0] EX_wcnt;
+  logic [5:0] ME_wcnt;
+  logic [5:0] WB_wcnt;
 
   logic [5:0] IF_tcnt;
   logic [5:0] ID_tcnt;
@@ -136,30 +147,58 @@ module top #(
   logic [5:0] ME_tcnt;
   logic [5:0] WB_tcnt;
 
+  logic IF_tcnt_gate;
+  logic ID_tcnt_gate;
+  logic EX_tcnt_gate;
+  logic ME_tcnt_gate;
+  logic WB_tcnt_gate;
 
   always_ff @(posedge clk)
   begin
-    if (IF_tcnt_inc)
+    // Note: **_tcnt_gate values can be overwritten by the lower section
+    if (IF_trem)
+      IF_tcnt_gate <= 0;
+    if (ID_trem)
+      ID_tcnt_gate <= 0;
+    if (EX_trem)
+      EX_tcnt_gate <= 0;
+    if (ME_trem)
+      ME_tcnt_gate <= 0;
+    if (WB_trem)
+      WB_tcnt_gate <= 0;
+
+    if (IF_wcnt_inc)
     begin
-      IF_tcnt <= $size(IF_tcnt)'($size(IF_tcnt+1)'(IF_tcnt)+1);
+      IF_wcnt <= $size(IF_wcnt)'($size(IF_wcnt+1)'(IF_wcnt)+1);
+      IF_tcnt_gate <= 1;
     end
-    if (ID_tcnt_inc)
+    if (ID_wcnt_inc)
     begin
-      ID_tcnt <= IF_tcnt;
+      ID_wcnt <= IF_wcnt;
+      ID_tcnt_gate <= 1;
     end
-    if (EX_tcnt_inc)
+    if (EX_wcnt_inc)
     begin
-      EX_tcnt <= ID_tcnt;
+      EX_wcnt <= ID_wcnt;
+      EX_tcnt_gate <= 1;
     end
-    if (ME_tcnt_inc)
+    if (ME_wcnt_inc)
     begin
-      ME_tcnt <= EX_tcnt;
+      ME_wcnt <= EX_wcnt;
+      ME_tcnt_gate <= 1;
     end
-    if (WB_tcnt_inc)
+    if (WB_wcnt_inc)
     begin
-      WB_tcnt <= ME_tcnt;
+      WB_wcnt <= ME_wcnt;
+      WB_tcnt_gate <= 1;
     end
   end
+
+assign IF_tcnt = IF_tcnt_gate ? IF_wcnt : 0;
+assign ID_tcnt = ID_tcnt_gate ? ID_wcnt : 0;
+assign EX_tcnt = EX_tcnt_gate ? EX_wcnt : 0;
+assign ME_tcnt = ME_tcnt_gate ? ME_wcnt : 0;
+assign WB_tcnt = WB_tcnt_gate ? WB_wcnt : 0;
 
 
   riscv_core #(
