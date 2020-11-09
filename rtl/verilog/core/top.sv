@@ -107,6 +107,16 @@ module top #(
   input                            tl_WB_rx_wait,
   input                            tl_WB_tx_wait,
 
+  input                            t1_IF_tx_wait,
+  input                            t1_ID_rx_wait,
+  input                            t1_ID_tx_wait,
+  input                            t1_EX_rx_wait,
+  input                            t1_EX_tx_wait,
+  input                            t1_ME_rx_wait,
+  input                            t1_ME_tx_wait,
+  input                            t1_WB_rx_wait,
+  input                            t1_WB_tx_wait,
+
   input                            t2_IF_tx_wait,
   input                            t2_ID_rx_wait,
   input                            t2_ID_tx_wait,
