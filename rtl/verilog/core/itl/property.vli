@@ -58,13 +58,13 @@ assume:
 			fell(next(t2_ME_tx_wait)) || 
 			fell(next(t2_WB_tx_wait))
 		);
-	
+
 	// Connect transaction flag variables
-	flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
-	flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
-	flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
-	flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
-	flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
 
 
     // Connect token counters
@@ -75,7 +75,7 @@ assume:
 	during[t,t+v_examination_window]: WB_tcnt_inc == m_WB_rx;
 
 	// Configure reset overlap
-	during[t,t+v_examination_window]: !rose(m_rst);
+	during[t,t+v_examination_window]: !rose(m_rst); // Once the reset is released it can not be triggered again
 	during[t,t+v_examination_window]: if (m_rst) IF_tcnt == 0 endif;
 	during[t,t+v_examination_window]: if (m_rst) ID_tcnt == 0 endif;
 	during[t,t+v_examination_window]: if (m_rst) EX_tcnt == 0 endif;
@@ -107,21 +107,21 @@ for timepoints:
 	t4_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(4),
 	t5_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(5),
 
-	t1_flush_f = t + 0..v_examination_window waits_for complete mg_t1_flush,
-	t2_flush_f = t + 0..v_examination_window waits_for complete mg_t2_flush,
-	t3_flush_f = t + 0..v_examination_window waits_for complete mg_t3_flush,
-	t4_flush_f = t + 0..v_examination_window waits_for complete mg_t4_flush,
-	t5_flush_f = t + 0..v_examination_window waits_for complete mg_t5_flush,
+	t1_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(1),
+	t2_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(2),
+	t3_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(3),
+	t4_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(4),
+	t5_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(5),
 
 	t_dummy = t; // last dummy line (for the semicolon)
 
 freeze:
 	// Freeze signals indicating flushing cases
-	at_t1_flush = mg_t1_flush@t1_flush_f,
-	at_t2_flush = mg_t2_flush@t2_flush_f,
-	at_t3_flush = mg_t3_flush@t3_flush_f,
-	at_t4_flush = mg_t4_flush@t4_flush_f,
-	at_t5_flush = mg_t5_flush@t5_flush_f,
+	at_t1_flush_exist = mg_tn_flush(1)@t1_flush_f,
+	at_t2_flush_exist = mg_tn_flush(2)@t2_flush_f,
+	at_t3_flush_exist = mg_tn_flush(3)@t3_flush_f,
+	at_t4_flush_exist = mg_tn_flush(4)@t4_flush_f,
+	at_t5_flush_exist = mg_tn_flush(5)@t5_flush_f,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
@@ -148,13 +148,20 @@ assume:
 	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
 
 prove:
-	at t: !at_t1_flush || !at_t2_flush || !at_t3_flush || !at_t4_flush || !at_t5_flush;
+	at t: !at_t1_flush_exist || !at_t2_flush_exist || !at_t3_flush_exist || !at_t4_flush_exist || !at_t5_flush_exist;
 
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
-	at t2_IF_rx_n: if (at_t1_flush) mg_tn_IF_rx(2) endif;
-	at t3_IF_rx_n: if (at_t1_flush && at_t2_flush) mg_tn_IF_rx(3) endif;
-	at t4_IF_rx_n: if (at_t1_flush && at_t2_flush && at_t3_flush) mg_tn_IF_rx(4) endif;
-	at t5_IF_rx_n: if (at_t1_flush && at_t2_flush && at_t3_flush && at_t4_flush) mg_tn_IF_rx(5) endif;
+	at t2_IF_rx_n: if (at_t1_flush_exist) mg_tn_IF_rx(2) endif;
+	at t3_IF_rx_n: if (at_t1_flush_exist && at_t2_flush_exist) mg_tn_IF_rx(3) endif;
+	at t4_IF_rx_n: if (at_t1_flush_exist && at_t2_flush_exist && at_t3_flush_exist) mg_tn_IF_rx(4) endif;
+	at t5_IF_rx_n: if (at_t1_flush_exist && at_t2_flush_exist && at_t3_flush_exist && at_t4_flush_exist) mg_tn_IF_rx(5) endif;
+
+	// Prove that counters do not overflow
+	during[t,t+v_examination_window]: next(IF_tcnt) >= IF_tcnt;
+	during[t,t+v_examination_window]: next(ID_tcnt) >= ID_tcnt;
+	during[t,t+v_examination_window]: next(EX_tcnt) >= EX_tcnt;
+	during[t,t+v_examination_window]: next(ME_tcnt) >= ME_tcnt;
+	during[t,t+v_examination_window]: next(WB_tcnt) >= WB_tcnt;
 
 end property;
 
@@ -171,21 +178,21 @@ for timepoints:
 	t4_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(4),
 	t5_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(5),
 
-	t1_flush_f = t + 0..v_examination_window waits_for complete mg_t1_flush,
-	t2_flush_f = t + 0..v_examination_window waits_for complete mg_t2_flush,
-	t3_flush_f = t + 0..v_examination_window waits_for complete mg_t3_flush,
-	t4_flush_f = t + 0..v_examination_window waits_for complete mg_t4_flush,
-	t5_flush_f = t + 0..v_examination_window waits_for complete mg_t5_flush,
+	t1_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(1),
+	t2_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(2),
+	t3_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(3),
+	t4_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(4),
+	t5_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(5),
 
 	t_dummy = t; // last dummy line (for the semicolon)
 
 freeze:
 	// Freeze signals indicating flushing cases
-	at_t1_flush = mg_t1_flush@t1_flush_f,
-	at_t2_flush = mg_t2_flush@t2_flush_f,
-	at_t3_flush = mg_t3_flush@t3_flush_f,
-	at_t4_flush = mg_t4_flush@t4_flush_f,
-	at_t5_flush = mg_t5_flush@t5_flush_f,
+	at_t1_flush_exist = mg_tn_flush(1)@t1_flush_f,
+	at_t2_flush_exist = mg_tn_flush(2)@t2_flush_f,
+	at_t3_flush_exist = mg_tn_flush(3)@t3_flush_f,
+	at_t4_flush_exist = mg_tn_flush(4)@t4_flush_f,
+	at_t5_flush_exist = mg_tn_flush(5)@t5_flush_f,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
@@ -194,7 +201,7 @@ assume:
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
 
 	// Make sure that property does not start at flushing
-	at t: !at_t1_flush;
+	at t: !at_t1_flush_exist;
 
     // Connect token counters
 	at t: IF_tcnt == 0;
@@ -216,13 +223,20 @@ assume:
 	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
 
 prove:
-	at t: !at_t2_flush || !at_t3_flush || !at_t4_flush || !at_t5_flush;
+	at t: !at_t2_flush_exist || !at_t3_flush_exist || !at_t4_flush_exist || !at_t5_flush_exist;
 
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
-	at t2_IF_rx_n: if (at_t1_flush) mg_tn_IF_rx(2) endif;
-	at t3_IF_rx_n: if (at_t1_flush && at_t2_flush) mg_tn_IF_rx(3) endif;
-	at t4_IF_rx_n: if (at_t1_flush && at_t2_flush && at_t3_flush) mg_tn_IF_rx(4) endif;
-	at t5_IF_rx_n: if (at_t1_flush && at_t2_flush && at_t3_flush && at_t4_flush) mg_tn_IF_rx(5) endif;
+	at t2_IF_rx_n: if (at_t1_flush_exist) mg_tn_IF_rx(2) endif;
+	at t3_IF_rx_n: if (at_t1_flush_exist && at_t2_flush_exist) mg_tn_IF_rx(3) endif;
+	at t4_IF_rx_n: if (at_t1_flush_exist && at_t2_flush_exist && at_t3_flush_exist) mg_tn_IF_rx(4) endif;
+	at t5_IF_rx_n: if (at_t1_flush_exist && at_t2_flush_exist && at_t3_flush_exist && at_t4_flush_exist) mg_tn_IF_rx(5) endif;
+
+	// Prove that counters do not overflow
+	during[t,t+v_examination_window]: next(IF_tcnt) >= IF_tcnt;
+	during[t,t+v_examination_window]: next(ID_tcnt) >= ID_tcnt;
+	during[t,t+v_examination_window]: next(EX_tcnt) >= EX_tcnt;
+	during[t,t+v_examination_window]: next(ME_tcnt) >= ME_tcnt;
+	during[t,t+v_examination_window]: next(WB_tcnt) >= WB_tcnt;
 
 end property;
 
@@ -333,11 +347,11 @@ for timepoints:
 
 
 	// Detect flushing cases
-	t1_flush_f = t + 0..v_examination_window waits_for complete mg_t1_flush,
-	t2_flush_f = t + 0..v_examination_window waits_for complete mg_t2_flush,
-	t3_flush_f = t + 0..v_examination_window waits_for complete mg_t3_flush,
-	t4_flush_f = t + 0..v_examination_window waits_for complete mg_t4_flush,
-	t5_flush_f = t + 0..v_examination_window waits_for complete mg_t5_flush,
+	t1_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(1),
+	t2_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(2),
+	t3_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(3),
+	t4_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(4),
+	t5_flush_f = t + 0..v_examination_window waits_for complete mg_tn_flush(5),
 
 	t_dummy = t; // last dummy line (for the semicolon)
 
@@ -362,13 +376,6 @@ freeze:
 	at_t2_WB_rx_exist = mg_tn_WB_rx(2)@t2_WB_rx_f,
 	at_t2_WB_tx_exist = mg_tn_WB_tx(2)@t2_WB_tx_f,
 
-	// Freeze signals indicating flushing cases
-	at_t1_flush = mg_t1_flush@t1_flush_f,
-	at_t2_flush = mg_t2_flush@t2_flush_f,
-	at_t3_flush = mg_t3_flush@t3_flush_f,
-	at_t4_flush = mg_t4_flush@t4_flush_f,
-	at_t5_flush = mg_t5_flush@t5_flush_f,
-
 	at_t2_IF_tx_instr = m_IF_instr@t2_IF_tx_f,
 	at_t2_ID_tx_instr = m_ID_instr@t2_ID_tx_f,
 	at_t2_EX_tx_instr = m_EX_instr@t2_EX_tx_f,
@@ -387,11 +394,11 @@ assume:
 	// Property is triggered whenever a token enters first pipeline stage
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
 
-	// Make sure that property does not start at flushing and no flushing occur withing the window
-	at t: !at_t1_flush;
-	at t: !at_t2_flush;
+	// Define flushing scenario
+	at t1_flush_f: mg_tn_flush(1) == false;
+	at t2_flush_f: mg_tn_flush(2) == false;
 
-	within[t,t+5]: m_IF_tx && !m_ID_rx;
+	//within[t,t+5]: m_IF_tx && !m_ID_rx;
 
 	// Connect token counters
 	at t: IF_tcnt == 0;
@@ -406,25 +413,25 @@ assume:
 	during[t,t+v_examination_window]: WB_tcnt_inc == m_WB_rx;
 
 	// Connect transaction flag variables
-	flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window, tl_IF_tx_f);
-	flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window, tl_ID_rx_f);
-	flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window, tl_ID_tx_f);
-	flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window, tl_EX_rx_f);
-	flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window, tl_EX_tx_f);
-	flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window, tl_ME_rx_f);
-	flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window, tl_ME_tx_f);
-	flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window, tl_WB_rx_f);
-	flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window, tl_WB_tx_f);
+	mg_flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window, tl_IF_tx_f);
+	mg_flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window, tl_ID_rx_f);
+	mg_flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window, tl_ID_tx_f);
+	mg_flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window, tl_EX_rx_f);
+	mg_flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window, tl_EX_tx_f);
+	mg_flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window, tl_ME_rx_f);
+	mg_flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window, tl_ME_tx_f);
+	mg_flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window, tl_WB_rx_f);
+	mg_flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window, tl_WB_tx_f);
 
-	flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
-	flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window, t2_ID_rx_f);
-	flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
-	flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window, t2_EX_rx_f);
-	flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
-	flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window, t2_ME_rx_f);
-	flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
-	flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window, t2_WB_rx_f);
-	flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
+	mg_flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window, t2_ID_rx_f);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
+	mg_flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window, t2_EX_rx_f);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
+	mg_flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window, t2_ME_rx_f);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
+	mg_flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window, t2_WB_rx_f);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
 
 	// For debugging
 	during[t,t+v_examination_window]: IF_instr_enum == getInstr(m_IF_instr);
@@ -466,6 +473,13 @@ prove:
 	at t2_ME_tx_f: if (at_t2_ME_tx_exist) mg_tn_ME_tx(2) endif;
 	at t2_WB_rx_f: if (at_t2_WB_rx_exist) mg_tn_WB_rx(2) endif;
 	at t2_WB_tx_f: if (at_t2_WB_tx_exist) mg_tn_WB_tx(2) endif;
+
+	// Prove that counters do not overflow
+	during[t,t+v_examination_window]: next(IF_tcnt) >= IF_tcnt;
+	during[t,t+v_examination_window]: next(ID_tcnt) >= ID_tcnt;
+	during[t,t+v_examination_window]: next(EX_tcnt) >= EX_tcnt;
+	during[t,t+v_examination_window]: next(ME_tcnt) >= ME_tcnt;
+	during[t,t+v_examination_window]: next(WB_tcnt) >= WB_tcnt;
 
 end property;
 
@@ -636,11 +650,11 @@ for timepoints:
 
 
 	// Detect flushing cases
-	t1_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_t1_flush,
-	t2_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_t2_flush,
-	t3_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_t3_flush,
-	t4_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_t4_flush,
-	t5_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_t5_flush,
+	t1_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(1),
+	t2_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(2),
+	t3_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(3),
+	t4_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(4),
+	t5_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(5),
 
 	t_dummy = t; // last dummy line (for the semicolon)
 
@@ -675,13 +689,6 @@ freeze:
 	at_t3_WB_rx_exist = mg_tn_WB_rx(3)@t3_WB_rx_f,
 	at_t3_WB_tx_exist = mg_tn_WB_tx(3)@t3_WB_tx_f,
 
-	// Freeze signals indicating flushing cases
-	at_t1_flush = mg_t1_flush@t1_flush_f,
-	at_t2_flush = mg_t2_flush@t2_flush_f,
-	at_t3_flush = mg_t3_flush@t3_flush_f,
-	at_t4_flush = mg_t4_flush@t4_flush_f,
-	at_t5_flush = mg_t5_flush@t5_flush_f,
-
 	at_t3_IF_tx_instr = m_IF_instr@t3_IF_tx_f,
 	at_t3_ID_tx_instr = m_ID_instr@t3_ID_tx_f,
 	at_t3_EX_tx_instr = m_EX_instr@t3_EX_tx_f,
@@ -701,9 +708,9 @@ assume:
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
 
 	// Define flushing scenario
-	at t: !at_t1_flush;
-	at t: at_t2_flush;
-	at t: !at_t3_flush;
+	at t1_flush_f: mg_tn_flush(1) == false;
+	at t2_flush_f: mg_tn_flush(2) == true;
+	at t3_flush_f: mg_tn_flush(3) == false;
 
 	// Connect token counters
 	at t: IF_tcnt == 0;
@@ -718,35 +725,35 @@ assume:
 	during[t,t+v_examination_window_f1]: WB_tcnt_inc == m_WB_rx;
 
 	// Connect transaction flag variables
-	flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window_f1, tl_IF_tx_f);
-	flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window_f1, tl_ID_rx_f);
-	flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window_f1, tl_ID_tx_f);
-	flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window_f1, tl_EX_rx_f);
-	flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window_f1, tl_EX_tx_f);
-	flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window_f1, tl_ME_rx_f);
-	flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window_f1, tl_ME_tx_f);
-	flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window_f1, tl_WB_rx_f);
-	flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window_f1, tl_WB_tx_f);
+	mg_flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window_f1, tl_IF_tx_f);
+	mg_flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window_f1, tl_ID_rx_f);
+	mg_flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window_f1, tl_ID_tx_f);
+	mg_flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window_f1, tl_EX_rx_f);
+	mg_flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window_f1, tl_EX_tx_f);
+	mg_flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window_f1, tl_ME_rx_f);
+	mg_flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window_f1, tl_ME_tx_f);
+	mg_flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window_f1, tl_WB_rx_f);
+	mg_flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window_f1, tl_WB_tx_f);
 
-	flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window_f1, t2_IF_tx_f);
-	flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window_f1, t2_ID_rx_f);
-	flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window_f1, t2_ID_tx_f);
-	flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window_f1, t2_EX_rx_f);
-	flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window_f1, t2_EX_tx_f);
-	flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window_f1, t2_ME_rx_f);
-	flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window_f1, t2_ME_tx_f);
-	flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window_f1, t2_WB_rx_f);
-	flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window_f1, t2_WB_tx_f);
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window_f1, t2_IF_tx_f);
+	mg_flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window_f1, t2_ID_rx_f);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window_f1, t2_ID_tx_f);
+	mg_flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window_f1, t2_EX_rx_f);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window_f1, t2_EX_tx_f);
+	mg_flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window_f1, t2_ME_rx_f);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window_f1, t2_ME_tx_f);
+	mg_flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window_f1, t2_WB_rx_f);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window_f1, t2_WB_tx_f);
 
-	flag_define(t3_IF_tx_wait, at_t3_IF_tx_exist, v_examination_window_f1, t3_IF_tx_f);
-	flag_define(t3_ID_rx_wait, at_t3_ID_rx_exist, v_examination_window_f1, t3_ID_rx_f);
-	flag_define(t3_ID_tx_wait, at_t3_ID_tx_exist, v_examination_window_f1, t3_ID_tx_f);
-	flag_define(t3_EX_rx_wait, at_t3_EX_rx_exist, v_examination_window_f1, t3_EX_rx_f);
-	flag_define(t3_EX_tx_wait, at_t3_EX_tx_exist, v_examination_window_f1, t3_EX_tx_f);
-	flag_define(t3_ME_rx_wait, at_t3_ME_rx_exist, v_examination_window_f1, t3_ME_rx_f);
-	flag_define(t3_ME_tx_wait, at_t3_ME_tx_exist, v_examination_window_f1, t3_ME_tx_f);
-	flag_define(t3_WB_rx_wait, at_t3_WB_rx_exist, v_examination_window_f1, t3_WB_rx_f);
-	flag_define(t3_WB_tx_wait, at_t3_WB_tx_exist, v_examination_window_f1, t3_WB_tx_f);
+	mg_flag_define(t3_IF_tx_wait, at_t3_IF_tx_exist, v_examination_window_f1, t3_IF_tx_f);
+	mg_flag_define(t3_ID_rx_wait, at_t3_ID_rx_exist, v_examination_window_f1, t3_ID_rx_f);
+	mg_flag_define(t3_ID_tx_wait, at_t3_ID_tx_exist, v_examination_window_f1, t3_ID_tx_f);
+	mg_flag_define(t3_EX_rx_wait, at_t3_EX_rx_exist, v_examination_window_f1, t3_EX_rx_f);
+	mg_flag_define(t3_EX_tx_wait, at_t3_EX_tx_exist, v_examination_window_f1, t3_EX_tx_f);
+	mg_flag_define(t3_ME_rx_wait, at_t3_ME_rx_exist, v_examination_window_f1, t3_ME_rx_f);
+	mg_flag_define(t3_ME_tx_wait, at_t3_ME_tx_exist, v_examination_window_f1, t3_ME_tx_f);
+	mg_flag_define(t3_WB_rx_wait, at_t3_WB_rx_exist, v_examination_window_f1, t3_WB_rx_f);
+	mg_flag_define(t3_WB_tx_wait, at_t3_WB_tx_exist, v_examination_window_f1, t3_WB_tx_f);
 
 	// For debugging
 	during[t,t+v_examination_window_f1]: IF_instr_enum == getInstr(m_IF_instr);
@@ -807,6 +814,13 @@ prove:
 	at t3_ME_tx_f: if (at_t3_ME_tx_exist) mg_tn_ME_tx(3) endif;
 	at t3_WB_rx_f: if (at_t3_WB_rx_exist) mg_tn_WB_rx(3) endif;
 	at t3_WB_tx_f: if (at_t3_WB_tx_exist) mg_tn_WB_tx(3) endif;
+
+	// Prove that counters do not overflow
+	during[t,t+v_examination_window]: next(IF_tcnt) >= IF_tcnt;
+	during[t,t+v_examination_window]: next(ID_tcnt) >= ID_tcnt;
+	during[t,t+v_examination_window]: next(EX_tcnt) >= EX_tcnt;
+	during[t,t+v_examination_window]: next(ME_tcnt) >= ME_tcnt;
+	during[t,t+v_examination_window]: next(WB_tcnt) >= WB_tcnt;
 
 end property;
 

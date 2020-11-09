@@ -222,7 +222,7 @@ end constraint;
 // Macros that serve as helpers, eventually should be (g)enerated and not modified by the user
 
 // tl stands for last token
-macro logic mg_tl_IF_tx := (m_IF_tx && (IF_tcnt == 1)) end macro;
+macro logic mg_tl_IF_tx := mg_tn_IF_tx(1) end macro;
 macro logic mg_tl_ID_rx := (m_ID_rx && next(ID_tcnt <= 1) && next(!tl_IF_tx_wait)) end macro;
 macro logic mg_tl_ID_tx := (m_ID_tx && (ID_tcnt <= 1) && !tl_ID_rx_wait) end macro;
 macro logic mg_tl_EX_rx := (m_EX_rx && next(EX_tcnt <= 1) && next(!tl_ID_tx_wait)) end macro;
@@ -256,23 +256,27 @@ macro logic mg_tn_ME_tx(numeric n) := (m_ME_tx && (ME_tcnt == n)) end macro;
 macro logic mg_tn_WB_tx(numeric n) := (m_WB_tx && (WB_tcnt == n)) end macro;
 
 // TODO if there is skipped stage flush can be still triggered
-macro logic mg_t0_ID_flush := (m_ID_flush && (ID_tcnt == 0)) end macro;
-macro logic mg_t0_EX_flush := (m_EX_flush && (EX_tcnt == 0)) end macro;
-macro logic mg_t0_ME_flush := (m_ME_flush && (ME_tcnt == 0)) end macro;
-macro logic mg_t0_WB_flush := (m_WB_flush && (WB_tcnt == 0)) end macro;
+macro logic mg_tl_ID_flush := (m_ID_flush && (ID_tcnt == 0)) end macro;
+macro logic mg_tl_EX_flush := (m_EX_flush && (EX_tcnt == 0)) end macro;
+macro logic mg_tl_ME_flush := (m_ME_flush && (ME_tcnt == 0)) end macro;
+macro logic mg_tl_WB_flush := (m_WB_flush && (WB_tcnt == 0)) end macro;
 
 macro logic mg_t1_ID_flush := (m_ID_flush && (ID_tcnt == 1)) end macro;
 macro logic mg_t1_EX_flush := (m_EX_flush && (EX_tcnt == 1)) end macro;
 macro logic mg_t1_ME_flush := (m_ME_flush && (ME_tcnt == 1)) end macro;
 macro logic mg_t1_WB_flush := (m_WB_flush && (WB_tcnt == 1)) end macro;
 
-macro logic mg_t1_flush := ((mg_t0_ID_flush || mg_t0_EX_flush || mg_t0_ME_flush || mg_t0_WB_flush) && (IF_tcnt > 0)) end macro;
-macro logic mg_t2_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 1)) end macro;
-macro logic mg_t3_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 2)) end macro;
-macro logic mg_t4_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 3)) end macro;
-macro logic mg_t5_flush := ((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt > 4)) end macro;
+macro logic mg_tn_flush(numeric n) := 
+	if (n == 1)
+		((mg_tl_ID_flush || mg_tl_EX_flush || mg_tl_ME_flush || mg_tl_WB_flush) && (IF_tcnt >= n));
+	elseif (n > 1)
+		((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_tcnt >= n));
+	else
+		false;
+	endif;
+end macro;
 
-macro temporal flag_define(logic wait_flag, exists_flag; numeric window; timepoint t_occurance) :=
+macro temporal mg_flag_define(logic wait_flag, exists_flag; numeric window; timepoint t_occurance) :=
 	during[t,t_occurance]: wait_flag == exists_flag;
-	during[t_occurance+1,t+window]: !wait_flag;
+	during[t_occurance+1,t+window]: wait_flag == false;
 end macro;
