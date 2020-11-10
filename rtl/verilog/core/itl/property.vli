@@ -9,11 +9,11 @@ property window_check;
 dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
 
 for timepoints:
-	t2_IF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_tx(2),
-	t2_ID_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_tx(2),
-	t2_EX_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_tx(2),
-	t2_ME_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_tx(2),
-	t2_WB_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_tx(2),
+	t2_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(2),
+	t2_ID_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ID_tx(2),
+	t2_EX_tx_f = t + 0..v_examination_window waits_for complete mg_tn_EX_tx(2),
+	t2_ME_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ME_tx(2),
+	t2_WB_tx_f = t + 0..v_examination_window waits_for complete mg_tn_WB_tx(2),
 
 	t_dummy = t; // last dummy line (for the semicolon)
 
@@ -31,27 +31,25 @@ assume:
 	// Need separate property to check each stage tx case
 	// TODO: Find a simple way to combine these assumptions?
 	// Note that each tx has to be the first occurance otherwise the property is not correct
-	// Use floating inputs?
 
+	at t+v_examination_window: mg_tn_IF_tx(2);
+	during[t,t+v_examination_window-1]: !mg_tn_IF_tx(2);
 
-	at t+v_examination_window_f1: mg_tn_IF_tx(2);
-	during[t,t+v_examination_window_f1-1]: !mg_tn_IF_tx(2);
+	at t+v_examination_window: mg_tn_ID_tx(2);
+	during[t,t+v_examination_window-1]: !mg_tn_ID_tx(2);
 
-	at t+v_examination_window_f1: mg_tn_ID_tx(2);
-	during[t,t+v_examination_window_f1-1]: !mg_tn_ID_tx(2);
+	at t+v_examination_window: mg_tn_EX_tx(2);
+	during[t,t+v_examination_window-1]: !mg_tn_EX_tx(2);
 
-	at t+v_examination_window_f1: mg_tn_EX_tx(2);
-	during[t,t+v_examination_window_f1-1]: !mg_tn_EX_tx(2);
+	at t+v_examination_window: mg_tn_ME_tx(2);
+	during[t,t+v_examination_window-1]: !mg_tn_ME_tx(2);
 
-	at t+v_examination_window_f1: mg_tn_ME_tx(2);
-	during[t,t+v_examination_window_f1-1]: !mg_tn_ME_tx(2);
-
-	at t+v_examination_window_f1: mg_tn_WB_tx(2);
-	during[t,t+v_examination_window_f1-1]: !mg_tn_WB_tx(2);
+	at t+v_examination_window: mg_tn_WB_tx(2);
+	during[t,t+v_examination_window-1]: !mg_tn_WB_tx(2);
 
 */
 
-	at t+v_examination_window_f1: (
+	at t+v_examination_window: (
 			fell(next(t2_IF_tx_wait)) || 
 			fell(next(t2_ID_tx_wait)) || 
 			fell(next(t2_EX_tx_wait)) || 
@@ -60,43 +58,35 @@ assume:
 		);
 
 	// Configure transaction flag variables
-	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window_f1, t2_IF_tx_f);
-	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window_f1, t2_ID_tx_f);
-	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window_f1, t2_EX_tx_f);
-	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window_f1, t2_ME_tx_f);
-	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window_f1, t2_WB_tx_f);	
-
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
 
     // Configure token counters
-	during[t,t+v_examination_window_f1]: IF_wcnt_inc == m_IF_rx;
-	during[t,t+v_examination_window_f1]: ID_wcnt_inc == m_ID_rx;
-	during[t,t+v_examination_window_f1]: EX_wcnt_inc == m_EX_rx;
-	during[t,t+v_examination_window_f1]: ME_wcnt_inc == m_ME_rx;
-	during[t,t+v_examination_window_f1]: WB_wcnt_inc == m_WB_rx;
+    at t: ID_wcnt == 0;
+	at t: EX_wcnt == 0;
+	at t: ME_wcnt == 0;
+	at t: WB_wcnt == 0;
 
-	during[t,t+v_examination_window_f1]: IF_trem == m_IF_tx;
-	during[t,t+v_examination_window_f1]: ID_trem == m_ID_tx;
-	during[t,t+v_examination_window_f1]: EX_trem == m_EX_tx;
-	during[t,t+v_examination_window_f1]: ME_trem == m_ME_tx;
-	during[t,t+v_examination_window_f1]: WB_trem == m_WB_tx;
+	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
+	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
+	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
+	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
+	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
+
+	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
+	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
+	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
+	during[t,t+v_examination_window]: ME_trem == m_ME_tx;
+	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
 
 	// Configure reset overlap
-	/*during[t,t+v_examination_window_f1]: !rose(m_rst); // Once the reset is released it can not be triggered again
-	during[t,t+v_examination_window_f1]: if (m_rst) IF_wcnt == 0 endif;
-	during[t,t+v_examination_window_f1]: if (m_rst) ID_wcnt == 0 endif;
-	during[t,t+v_examination_window_f1]: if (m_rst) EX_wcnt == 0 endif;
-	during[t,t+v_examination_window_f1]: if (m_rst) ME_wcnt == 0 endif;
-	during[t,t+v_examination_window_f1]: if (m_rst) WB_wcnt == 0 endif;*/
-
-	// Prevent counter overflowing
-	/*during[t,t+v_examination_window_f1]: next(IF_wcnt) >= IF_wcnt;
-	during[t,t+v_examination_window_f1]: next(ID_wcnt) >= ID_wcnt;
-	during[t,t+v_examination_window_f1]: next(EX_wcnt) >= EX_wcnt;
-	during[t,t+v_examination_window_f1]: next(ME_wcnt) >= ME_wcnt;
-	during[t,t+v_examination_window_f1]: next(WB_wcnt) >= WB_wcnt;*/
+	during[t,t+v_examination_window]: !rose(m_rst); // Once the reset is released it can not be triggered again
 
 prove:
-	within[t,t+v_examination_window_f1]: mg_tn_IF_rx(1);
+	within[t,t+v_examination_window]: mg_tn_IF_rx(1);
 
 end property;
 
