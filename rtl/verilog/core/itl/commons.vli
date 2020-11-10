@@ -223,15 +223,15 @@ end constraint;
 // Macros that serve as helpers, eventually should be (g)enerated and not modified by the user
 
 // tl stands for last token
-macro logic mg_tl_IF_tx := mg_tn_IF_tx(0) end macro;
-macro logic mg_tl_ID_rx := (m_ID_rx && next(ID_wcnt == 0) && next(!tl_IF_tx_wait)) end macro;
-macro logic mg_tl_ID_tx := (m_ID_tx && (ID_wcnt == 0) && !tl_ID_rx_wait) end macro;
-macro logic mg_tl_EX_rx := (m_EX_rx && next(EX_wcnt == 0) && next(!tl_ID_tx_wait)) end macro;
-macro logic mg_tl_EX_tx := (m_EX_tx && (EX_wcnt == 0) && !tl_EX_rx_wait) end macro;
-macro logic mg_tl_ME_rx := (m_ME_rx && next(ME_wcnt == 0) && next(!tl_EX_tx_wait)) end macro;
-macro logic mg_tl_ME_tx := (m_ME_tx && (ME_wcnt == 0) && !tl_ME_rx_wait) end macro;
-macro logic mg_tl_WB_rx := (m_WB_rx && next(WB_wcnt == 0) && next(!tl_ME_tx_wait)) end macro;
-macro logic mg_tl_WB_tx := (m_WB_tx && (WB_wcnt == 0) && !tl_WB_rx_wait) end macro;
+macro logic mg_tl_IF_tx := mg_tn_IF_tx(1) end macro;
+macro logic mg_tl_ID_rx := (m_ID_rx && next(ID_wcnt <= 1) && next(!tl_IF_tx_wait)) end macro;
+macro logic mg_tl_ID_tx := (m_ID_tx && (ID_wcnt <= 1) && !tl_ID_rx_wait) end macro;
+macro logic mg_tl_EX_rx := (m_EX_rx && next(EX_wcnt <= 1) && next(!tl_ID_tx_wait)) end macro;
+macro logic mg_tl_EX_tx := (m_EX_tx && (EX_wcnt <= 1) && !tl_EX_rx_wait) end macro;
+macro logic mg_tl_ME_rx := (m_ME_rx && next(ME_wcnt <= 1) && next(!tl_EX_tx_wait)) end macro;
+macro logic mg_tl_ME_tx := (m_ME_tx && (ME_wcnt <= 1) && !tl_ME_rx_wait) end macro;
+macro logic mg_tl_WB_rx := (m_WB_rx && next(WB_wcnt <= 1) && next(!tl_ME_tx_wait)) end macro;
+macro logic mg_tl_WB_tx := (m_WB_tx && (WB_wcnt <= 1) && !tl_WB_rx_wait) end macro;
 
 /*
 macro logic mg_t0_EX_rx := (m_EX_rx && next(EX_wcnt == 0) && next(!t0_ID_tx_wait)) end macro;

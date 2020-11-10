@@ -64,7 +64,7 @@ assume:
 	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
 	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
 
-    // Configure token counters
+    // Configure token counters, note that IF_wcnt is not fixed on purpose since the property goes backwards. Fixing it would cause property to be unreachable
     at t: ID_wcnt == 0;
 	at t: EX_wcnt == 0;
 	at t: ME_wcnt == 0;
@@ -203,33 +203,6 @@ prove:
 	at t1_IF_tx_f: m_IF_pc == prev(c/if_unit/pd_pc);
 	at t1_IF_tx_f: m_IF_instr == prev(c/if_unit/pd_instr);
 
-	// Sanity checks
-	at t: if (at_t1_ID_rx_exist) at_t1_IF_tx_exist endif;
-	at t: if (at_t1_ID_tx_exist) at_t1_ID_rx_exist endif;
-	at t: if (at_t1_EX_rx_exist) at_t1_ID_tx_exist endif;
-	at t: if (at_t1_EX_tx_exist) at_t1_EX_rx_exist endif;
-	at t: if (at_t1_ME_rx_exist) at_t1_EX_tx_exist endif;
-	at t: if (at_t1_ME_tx_exist) at_t1_ME_rx_exist endif;
-	at t: if (at_t1_WB_rx_exist) at_t1_ME_tx_exist endif;
-	at t: if (at_t1_WB_tx_exist) at_t1_WB_rx_exist endif;
-
-	at t1_IF_tx_f: if (at_t1_IF_tx_exist) mg_tn_IF_tx(1) endif;
-	at t1_ID_rx_f: if (at_t1_ID_rx_exist) mg_tn_ID_rx(1) endif;
-	at t1_ID_tx_f: if (at_t1_ID_tx_exist) mg_tn_ID_tx(1) endif;
-	at t1_EX_rx_f: if (at_t1_EX_rx_exist) mg_tn_EX_rx(1) endif;
-	at t1_EX_tx_f: if (at_t1_EX_tx_exist) mg_tn_EX_tx(1) endif;
-	at t1_ME_rx_f: if (at_t1_ME_rx_exist) mg_tn_ME_rx(1) endif;
-	at t1_ME_tx_f: if (at_t1_ME_tx_exist) mg_tn_ME_tx(1) endif;
-	at t1_WB_rx_f: if (at_t1_WB_rx_exist) mg_tn_WB_rx(1) endif;
-	at t1_WB_tx_f: if (at_t1_WB_tx_exist) mg_tn_WB_tx(1) endif;
-
-	// Prove that counters do not overflow
-	during[t,t+v_examination_window]: next(IF_wcnt) >= IF_wcnt;
-	during[t,t+v_examination_window]: next(ID_wcnt) >= ID_wcnt;
-	during[t,t+v_examination_window]: next(EX_wcnt) >= EX_wcnt;
-	during[t,t+v_examination_window]: next(ME_wcnt) >= ME_wcnt;
-	during[t,t+v_examination_window]: next(WB_wcnt) >= WB_wcnt;
-
 end property;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -311,6 +284,86 @@ prove:
 	during[t,t+v_examination_window]: next(EX_wcnt) >= EX_wcnt;
 	during[t,t+v_examination_window]: next(ME_wcnt) >= ME_wcnt;
 	during[t,t+v_examination_window]: next(WB_wcnt) >= WB_wcnt;
+
+end property;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+property sanity;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+for timepoints:
+	// t1 detection
+	t1_IF_rx_n = t,
+	t1_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(1),
+	t1_ID_rx_f = t + 0..v_examination_window waits_for complete mg_tn_ID_rx(1),
+	t1_ID_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ID_tx(1),
+	t1_EX_rx_f = t + 0..v_examination_window waits_for complete mg_tn_EX_rx(1),
+	t1_EX_tx_f = t + 0..v_examination_window waits_for complete mg_tn_EX_tx(1),
+	t1_ME_rx_f = t + 0..v_examination_window waits_for complete mg_tn_ME_rx(1),
+	t1_ME_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ME_tx(1),
+	t1_WB_rx_f = t + 0..v_examination_window waits_for complete mg_tn_WB_rx(1),
+	t1_WB_tx_f = t + 0..v_examination_window waits_for complete mg_tn_WB_tx(1),
+
+	// t2 detection
+	t2_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(2),
+
+	t_dummy = t; // last dummy line (for the semicolon)
+
+freeze:
+	at_t1_IF_tx_exist = mg_tn_IF_tx(1)@t1_IF_tx_f,
+	at_t1_ID_rx_exist = mg_tn_ID_rx(1)@t1_ID_rx_f,
+	at_t1_ID_tx_exist = mg_tn_ID_tx(1)@t1_ID_tx_f,
+	at_t1_EX_rx_exist = mg_tn_EX_rx(1)@t1_EX_rx_f,
+	at_t1_EX_tx_exist = mg_tn_EX_tx(1)@t1_EX_tx_f,
+	at_t1_ME_rx_exist = mg_tn_ME_rx(1)@t1_ME_rx_f,
+	at_t1_ME_tx_exist = mg_tn_ME_tx(1)@t1_ME_tx_f,
+	at_t1_WB_rx_exist = mg_tn_WB_rx(1)@t1_WB_rx_f,
+	at_t1_WB_tx_exist = mg_tn_WB_tx(1)@t1_WB_tx_f,
+
+	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
+
+assume:
+	// Property is triggered whenever a token enters first pipeline stage
+	at t1_IF_rx_n: mg_tn_IF_rx(1);
+
+	// Configure token counters
+	at t: IF_wcnt == 0;
+	at t: ID_wcnt == 0;
+	at t: EX_wcnt == 0;
+	at t: ME_wcnt == 0;
+	at t: WB_wcnt == 0;
+
+	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
+	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
+	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
+	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
+	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
+
+prove:
+	// Prove right hook
+	at t2_IF_rx_n: mg_tn_IF_rx(2);
+
+	// Sanity checks
+	at t: if (at_t1_ID_rx_exist) at_t1_IF_tx_exist endif;
+	at t: if (at_t1_ID_tx_exist) at_t1_ID_rx_exist endif;
+	at t: if (at_t1_EX_rx_exist) at_t1_ID_tx_exist endif;
+	at t: if (at_t1_EX_tx_exist) at_t1_EX_rx_exist endif;
+	at t: if (at_t1_ME_rx_exist) at_t1_EX_tx_exist endif;
+	at t: if (at_t1_ME_tx_exist) at_t1_ME_rx_exist endif;
+	at t: if (at_t1_WB_rx_exist) at_t1_ME_tx_exist endif;
+	at t: if (at_t1_WB_tx_exist) at_t1_WB_rx_exist endif;
+
+	at t1_IF_tx_f: if (at_t1_IF_tx_exist) mg_tn_IF_tx(1) endif;
+	at t1_ID_rx_f: if (at_t1_ID_rx_exist) mg_tn_ID_rx(1) endif;
+	at t1_ID_tx_f: if (at_t1_ID_tx_exist) mg_tn_ID_tx(1) endif;
+	at t1_EX_rx_f: if (at_t1_EX_rx_exist) mg_tn_EX_rx(1) endif;
+	at t1_EX_tx_f: if (at_t1_EX_tx_exist) mg_tn_EX_tx(1) endif;
+	at t1_ME_rx_f: if (at_t1_ME_rx_exist) mg_tn_ME_rx(1) endif;
+	at t1_ME_tx_f: if (at_t1_ME_tx_exist) mg_tn_ME_tx(1) endif;
+	at t1_WB_rx_f: if (at_t1_WB_rx_exist) mg_tn_WB_rx(1) endif;
+	at t1_WB_tx_f: if (at_t1_WB_tx_exist) mg_tn_WB_tx(1) endif;
 
 end property;
 
@@ -521,12 +574,6 @@ assume:
 	during[t,t+v_examination_window]: ME_instr_enum == getInstr(m_ME_instr);
 	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
 
-	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
-	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
-	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
-	during[t,t+v_examination_window]: ME_trem == m_ME_tx;
-	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
-
 prove:
 	// Prove right hook
 	at t2_IF_rx_n: mg_tn_IF_rx(2);
@@ -540,33 +587,6 @@ prove:
 	at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_pc == at_t2_ID_tx_pc endif;
 	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_pc == at_t2_EX_tx_pc endif;
 	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_pc == at_t2_ME_tx_pc endif;
-
-	// Sanity checks
-	at t: if (at_t2_ID_rx_exist) at_t2_IF_tx_exist endif;
-	at t: if (at_t2_ID_tx_exist) at_t2_ID_rx_exist endif;
-	at t: if (at_t2_EX_rx_exist) at_t2_ID_tx_exist endif;
-	at t: if (at_t2_EX_tx_exist) at_t2_EX_rx_exist endif;
-	at t: if (at_t2_ME_rx_exist) at_t2_EX_tx_exist endif;
-	at t: if (at_t2_ME_tx_exist) at_t2_ME_rx_exist endif;
-	at t: if (at_t2_WB_rx_exist) at_t2_ME_tx_exist endif;
-	at t: if (at_t2_WB_tx_exist) at_t2_WB_rx_exist endif;
-
-	at t2_IF_tx_f: if (at_t2_IF_tx_exist) mg_tn_IF_tx(2) endif;
-	at t2_ID_rx_f: if (at_t2_ID_rx_exist) mg_tn_ID_rx(2) endif;
-	at t2_ID_tx_f: if (at_t2_ID_tx_exist) mg_tn_ID_tx(2) endif;
-	at t2_EX_rx_f: if (at_t2_EX_rx_exist) mg_tn_EX_rx(2) endif;
-	at t2_EX_tx_f: if (at_t2_EX_tx_exist) mg_tn_EX_tx(2) endif;
-	at t2_ME_rx_f: if (at_t2_ME_rx_exist) mg_tn_ME_rx(2) endif;
-	at t2_ME_tx_f: if (at_t2_ME_tx_exist) mg_tn_ME_tx(2) endif;
-	at t2_WB_rx_f: if (at_t2_WB_rx_exist) mg_tn_WB_rx(2) endif;
-	at t2_WB_tx_f: if (at_t2_WB_tx_exist) mg_tn_WB_tx(2) endif;
-
-	// Prove that counters do not overflow
-	during[t,t+v_examination_window]: next(IF_wcnt) >= IF_wcnt;
-	during[t,t+v_examination_window]: next(ID_wcnt) >= ID_wcnt;
-	during[t,t+v_examination_window]: next(EX_wcnt) >= EX_wcnt;
-	during[t,t+v_examination_window]: next(ME_wcnt) >= ME_wcnt;
-	during[t,t+v_examination_window]: next(WB_wcnt) >= WB_wcnt;
 
 end property;
 
@@ -868,52 +888,6 @@ prove:
 	at t3_EX_tx_f: if (at_t3_EX_tx_exist) m_EX_pc == at_t3_ID_tx_pc endif;
 	at t3_ME_tx_f: if (at_t3_ME_tx_exist) m_ME_pc == at_t3_EX_tx_pc endif;
 	at t3_WB_tx_f: if (at_t3_WB_tx_exist) m_WB_pc == at_t3_ME_tx_pc endif;
-
-	// Sanity checks
-	at t: if (at_t2_ID_rx_exist) at_t2_IF_tx_exist endif;
-	at t: if (at_t2_ID_tx_exist) at_t2_ID_rx_exist endif;
-	at t: if (at_t2_EX_rx_exist) at_t2_ID_tx_exist endif;
-	at t: if (at_t2_EX_tx_exist) at_t2_EX_rx_exist endif;
-	at t: if (at_t2_ME_rx_exist) at_t2_EX_tx_exist endif;
-	at t: if (at_t2_ME_tx_exist) at_t2_ME_rx_exist endif;
-	at t: if (at_t2_WB_rx_exist) at_t2_ME_tx_exist endif;
-	at t: if (at_t2_WB_tx_exist) at_t2_WB_rx_exist endif;
-
-	at t2_IF_tx_f: if (at_t2_IF_tx_exist) mg_tn_IF_tx(2) endif;
-	at t2_ID_rx_f: if (at_t2_ID_rx_exist) mg_tn_ID_rx(2) endif;
-	at t2_ID_tx_f: if (at_t2_ID_tx_exist) mg_tn_ID_tx(2) endif;
-	at t2_EX_rx_f: if (at_t2_EX_rx_exist) mg_tn_EX_rx(2) endif;
-	at t2_EX_tx_f: if (at_t2_EX_tx_exist) mg_tn_EX_tx(2) endif;
-	at t2_ME_rx_f: if (at_t2_ME_rx_exist) mg_tn_ME_rx(2) endif;
-	at t2_ME_tx_f: if (at_t2_ME_tx_exist) mg_tn_ME_tx(2) endif;
-	at t2_WB_rx_f: if (at_t2_WB_rx_exist) mg_tn_WB_rx(2) endif;
-	at t2_WB_tx_f: if (at_t2_WB_tx_exist) mg_tn_WB_tx(2) endif;
-
-	at t: if (at_t3_ID_rx_exist) at_t3_IF_tx_exist endif;
-	at t: if (at_t3_ID_tx_exist) at_t3_ID_rx_exist endif;
-	at t: if (at_t3_EX_rx_exist) at_t3_ID_tx_exist endif;
-	at t: if (at_t3_EX_tx_exist) at_t3_EX_rx_exist endif;
-	at t: if (at_t3_ME_rx_exist) at_t3_EX_tx_exist endif;
-	at t: if (at_t3_ME_tx_exist) at_t3_ME_rx_exist endif;
-	at t: if (at_t3_WB_rx_exist) at_t3_ME_tx_exist endif;
-	at t: if (at_t3_WB_tx_exist) at_t3_WB_rx_exist endif;
-
-	at t3_IF_tx_f: if (at_t3_IF_tx_exist) mg_tn_IF_tx(3) endif;
-	at t3_ID_rx_f: if (at_t3_ID_rx_exist) mg_tn_ID_rx(3) endif;
-	at t3_ID_tx_f: if (at_t3_ID_tx_exist) mg_tn_ID_tx(3) endif;
-	at t3_EX_rx_f: if (at_t3_EX_rx_exist) mg_tn_EX_rx(3) endif;
-	at t3_EX_tx_f: if (at_t3_EX_tx_exist) mg_tn_EX_tx(3) endif;
-	at t3_ME_rx_f: if (at_t3_ME_rx_exist) mg_tn_ME_rx(3) endif;
-	at t3_ME_tx_f: if (at_t3_ME_tx_exist) mg_tn_ME_tx(3) endif;
-	at t3_WB_rx_f: if (at_t3_WB_rx_exist) mg_tn_WB_rx(3) endif;
-	at t3_WB_tx_f: if (at_t3_WB_tx_exist) mg_tn_WB_tx(3) endif;
-
-	// Prove that counters do not overflow
-	during[t,t+v_examination_window]: next(IF_wcnt) >= IF_wcnt;
-	during[t,t+v_examination_window]: next(ID_wcnt) >= ID_wcnt;
-	during[t,t+v_examination_window]: next(EX_wcnt) >= EX_wcnt;
-	during[t,t+v_examination_window]: next(ME_wcnt) >= ME_wcnt;
-	during[t,t+v_examination_window]: next(WB_wcnt) >= WB_wcnt;
 
 end property;
 
