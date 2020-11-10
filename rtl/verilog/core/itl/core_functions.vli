@@ -79,8 +79,23 @@ macro expr getInstr(unsigned encodedInstr) :=
 	elseif ((encodedInstr[6:0] == 32'h00000073) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000009) && ((encodedInstr >>  7)[4:0] == 32'h00000000)) SFENCEVMA_INSTR
 	elseif  (encodedInstr[6:0] == 32'h00000073) UNKNOWN_INSTR
 	else UNKNOWN_INSTR
-endif
+	endif
 end macro; 
+
+macro unsigned getImmediate(unsigned encodedInstr) := 
+	if     (((encodedInstr[6:0] == 32'h00000013) || (encodedInstr[6:0] == 32'h00000003) || (encodedInstr[6:0] == 32'h00000067)) && (getInstr(encodedInstr) == SRAI_INSTR)) 	 ((encodedInstr >> 20) & 32'h0000001F)
+	elseif (((encodedInstr[6:0] == 32'h00000013) || (encodedInstr[6:0] == 32'h00000003) || (encodedInstr[6:0] == 32'h00000067)) && encodedInstr[31]) 						  (encodedInstr >> 20)
+	elseif (((encodedInstr[6:0] == 32'h00000013) || (encodedInstr[6:0] == 32'h00000003) || (encodedInstr[6:0] == 32'h00000067))) 											 ((encodedInstr >> 20) | 32'hFFFFF000)
+	elseif  ((encodedInstr[6:0] == 32'h00000023) && encodedInstr[31]) 																										(((encodedInstr >> 20) & 32'h00000FE0) | ((encodedInstr >> 7) & 32'h0000001F))
+	elseif   (encodedInstr[6:0] == 32'h00000023) 																															(((encodedInstr >> 20) & 32'h00000FE0) | ((encodedInstr >> 7) & 32'h0000001F) | 32'hFFFFF000)
+	elseif  ((encodedInstr[6:0] == 32'h00000063) && encodedInstr[31]) 																										(((encodedInstr >> 20) & 32'h000007E0) | ((encodedInstr >> 7) & 32'h0000001E) | ((encodedInstr << 4) & 32'h00000800))
+	elseif   (encodedInstr[6:0] == 32'h00000063) 																															(((encodedInstr >> 20) & 32'h000007E0) | ((encodedInstr >> 7) & 32'h0000001E) | ((encodedInstr << 4) & 32'h00000800) | 32'hFFFFF000)
+	elseif  ((encodedInstr[6:0] == 32'h00000037) || (encodedInstr[6:0] == 32'h00000017)) 																					  (encodedInstr & 32'hFFFFF000)
+	elseif  ((encodedInstr[6:0] == 32'h0000006F) && encodedInstr[31]) 																										 ((encodedInstr & 32'h000FF000) | ((encodedInstr >> 9) & 32'h00000800) | ((encodedInstr >> 20) & 32'h000007FE))
+	elseif   (encodedInstr[6:0] == 32'h0000006F) 																															 ((encodedInstr & 32'h000FF000) | ((encodedInstr >> 9) & 32'h00000800) | ((encodedInstr >> 20) & 32'h000007FE) | 32'hFFF00000)
+	else 																																									   32'h00000000
+	endif
+end macro;
 
 /*
 macro ALUFunc_t getALUFunc(Instr_t instr) := 
