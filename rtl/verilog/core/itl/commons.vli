@@ -57,11 +57,11 @@ macro unsigned m_WB_pc := c/wb_unit/wb_pc_o end macro;
 
 // Instruction filters are used to constrain the instructions that are read from the memory (to avoid illegal instructions and reduce computation complexity)
 macro bit instr_filter1(unsigned encodedInstr) := 
-	/*(getOpcode(encodedInstr) == OPCODE_I_L) ||
-	(getOpcode(encodedInstr) == OPCODE_S) ||
-	(getOpcode(encodedInstr) == OPCODE_I) ||*/
-	(getOpcode(encodedInstr) == OPCODE_R) /*||
-	(getOpcode(encodedInstr) == OPCODE_B)*/
+	/*(OPCODE_FIELD(encodedInstr) == OPCODE_I_L) ||
+	(OPCODE_FIELD(encodedInstr) == OPCODE_S) ||
+	(OPCODE_FIELD(encodedInstr) == OPCODE_I) ||*/
+	(OPCODE_FIELD(encodedInstr) == OPCODE_R) /*||
+	(OPCODE_FIELD(encodedInstr) == OPCODE_B)*/
 end macro;
 
 
