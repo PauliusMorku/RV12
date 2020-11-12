@@ -3,6 +3,8 @@ TODO:
 	-try to match windows exactly (remove overlap)
 */
 
+macro unsigned v_imem_slack := 2 end macro;
+macro unsigned v_dmem_slack := 2 end macro;
 macro unsigned v_examination_window := 20 end macro;
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +17,7 @@ macro unsigned v_examination_window := 20 end macro;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property window_check;
-dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_fairness;
+dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_response;
 
 for timepoints:
 	t2_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(2),
@@ -109,7 +111,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property base;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_response;
 for timepoints:
 	t1_IF_rx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(1),
 
@@ -229,7 +231,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property flush_check;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_response;
 for timepoints:
 	t1_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(1),
 	t2_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(2),
@@ -315,7 +317,7 @@ end property;
                                   |___/ 
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 property sanity;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_response;
 for timepoints:
 	// t1 detection
 	t1_IF_rx_n = t,
@@ -392,13 +394,16 @@ end property;
 
 
 property mem_sanity;
-dependencies: c_imem_response;
+dependencies: c_imem_response, c_dmem_response;
 assume:
 	at t: mg_tn_IF_rx(1);
 
 	//within[t,t+15]: if_parcel_valid == 2'b01;
+	//within[t,t+v_examination_window]: dmem_ack;
+	//during[t,t+v_examination_window]: !dmem_req;
 
 	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
+
 
 prove:
 	at t: true;
@@ -415,7 +420,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property step;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_response;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
@@ -661,7 +666,7 @@ end property;
 macro unsigned v_examination_window_f1 := 30 end macro;
 
 property step_f1;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response, c_dmem_response;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages

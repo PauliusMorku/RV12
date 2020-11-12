@@ -130,7 +130,6 @@ constraint c_no_bu_flush :=
 	endif;
 end constraint;
 
-macro unsigned imem_slack := 2 end macro;
 constraint c_imem_response :=
 	if (!m_rst)
 		if (if_flush == 0)
@@ -145,7 +144,7 @@ constraint c_imem_response :=
 			endif &&
 
 			// Make sure that a response exists for every request or there is a flush request
-			exists i in 0..imem_slack:
+			exists i in 0..v_imem_slack:
 				(
 					(next(if_parcel_pc, i) == if_nxt_pc) &&
 					(next(if_parcel_valid,i) == 2'b11)
@@ -154,7 +153,7 @@ constraint c_imem_response :=
 			end exists &&
 			
 			// Every occurance where pc matches has to be valid (helps to prevent some unwanted behaviour)
-			foreach i in 0..imem_slack:
+			foreach i in 0..v_imem_slack:
 				if (next(if_flush, i) == 0)
 					if (next(if_parcel_pc,i) == if_nxt_pc)
 						(next(if_parcel_valid,i) == 2'b11)
@@ -163,7 +162,7 @@ constraint c_imem_response :=
 			end foreach &&
 
 			// Make sure once response occurs then it is valid till a flush occurs
-			foreach i in 0..imem_slack:
+			foreach i in 0..v_imem_slack:
 				if ((next(if_flush, i) == 0) && (next(if_flush, i+1) == 0))
 					if (next(if_parcel_pc,i) == if_nxt_pc)
 						if (next(if_stall, i) == 0)
@@ -176,7 +175,7 @@ constraint c_imem_response :=
 
 			// Make sure that after flush all values are reset till the next response
 			if (fell(if_flush) || fell(m_rst))
-				foreach i in 0..imem_slack:
+				foreach i in 0..v_imem_slack:
 					if ((next(if_parcel_pc,i) != if_nxt_pc) && (next(if_parcel_valid, i-1) == 2'b00))
 						(next(if_parcel_valid,i) == 2'b00)
 					endif
@@ -201,6 +200,45 @@ constraint c_imem_response :=
 	if (if_parcel_valid != 2'b11)
 		(if_parcel == 32'h00000000)
 	endif;
+end constraint;
+
+constraint c_dmem_response :=
+	if (!m_rst)
+
+		if (next(dmem_ack, v_dmem_slack+1) == 1)
+			exists i in 0..v_dmem_slack:
+				next(dmem_req,i) == 1
+			end exists
+		endif &&
+
+		if (dmem_req == 1)
+			exists i in 0..v_dmem_slack:
+				next(dmem_ack,i+1) == 1
+			end exists
+		endif &&
+
+		foreach i in 0..v_dmem_slack:
+			if (dmem_req == 1)
+				if (next(dmem_ack,i+1) == dmem_req)
+					next(dmem_ack,i+2) == next(dmem_req)
+				endif
+			endif
+		end foreach &&
+
+		if (fell(m_rst))
+			foreach i in 0..v_dmem_slack:
+				if (next(dmem_req,i) == 0)
+					(next(dmem_ack,i+1) == 0)
+				endif
+			end foreach &&
+			(dmem_ack == 0)
+		endif
+    else
+    	dmem_ack == 0
+	endif &&
+   (dmem_err == 0) &&
+   (dmem_misaligned == 0) &&
+   (dmem_page_fault == 0);
 end constraint;
 
 constraint c_if_nop :=
@@ -230,14 +268,6 @@ end constraint;
 constraint c_dmem_ready :=
 	if (!m_rst)
 		dmem_ack == 1;
-	endif;
-end constraint;
-
-constraint c_dmem_fairness :=
-	if (!m_rst)
-		exists i in 0..1:
-			next(dmem_ack,i) == 1;
-		end exists;
 	endif;
 end constraint;
 
