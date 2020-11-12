@@ -3,7 +3,7 @@ TODO:
 	-try to match windows exactly (remove overlap)
 */
 
-macro unsigned v_examination_window := 26 end macro;
+macro unsigned v_examination_window := 30 end macro;
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
              _               _                               _                     _    
@@ -15,7 +15,7 @@ macro unsigned v_examination_window := 26 end macro;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property window_check;
-dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_no_imem_stall, c_imem_response, c_dmem_fairness;
 
 for timepoints:
 	t2_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(2),
@@ -36,27 +36,27 @@ freeze:
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
 assume:
-/*
+
 	// Need separate property to check each stage tx case
 	// TODO: Find a simple way to combine these assumptions?
 	// Note that each tx has to be the first occurance otherwise the property is not correct
 
-	at t+v_examination_window: mg_tn_IF_tx(2);
-	during[t,t+v_examination_window-1]: !mg_tn_IF_tx(2);
+	// at t+v_examination_window: mg_tn_IF_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_IF_tx(2);
 
-	at t+v_examination_window: mg_tn_ID_tx(2);
-	during[t,t+v_examination_window-1]: !mg_tn_ID_tx(2);
+	// at t+v_examination_window: mg_tn_ID_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_ID_tx(2);
 
-	at t+v_examination_window: mg_tn_EX_tx(2);
-	during[t,t+v_examination_window-1]: !mg_tn_EX_tx(2);
+	// at t+v_examination_window: mg_tn_EX_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_EX_tx(2);
 
-	at t+v_examination_window: mg_tn_ME_tx(2);
-	during[t,t+v_examination_window-1]: !mg_tn_ME_tx(2);
+	// at t+v_examination_window: mg_tn_ME_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_ME_tx(2);
 
-	at t+v_examination_window: mg_tn_WB_tx(2);
-	during[t,t+v_examination_window-1]: !mg_tn_WB_tx(2);
+	// at t+v_examination_window: mg_tn_WB_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_WB_tx(2);
 
-*/
+
 
 	at t+v_examination_window: (
 			fell(next(t2_IF_tx_wait)) || 
@@ -109,7 +109,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property base;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_no_imem_stall, c_imem_response, c_dmem_fairness;
 for timepoints:
 	t1_IF_rx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(1),
 
@@ -229,7 +229,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property flush_check;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_no_imem_stall, c_imem_response, c_dmem_fairness;
 for timepoints:
 	t1_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(1),
 	t2_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(2),
@@ -315,7 +315,7 @@ end property;
                                   |___/ 
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 property sanity;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_no_imem_stall, c_imem_response, c_dmem_fairness;
 for timepoints:
 	// t1 detection
 	t1_IF_rx_n = t,
@@ -390,6 +390,21 @@ prove:
 
 end property;
 
+
+// property mem_sanity;
+// dependencies: c_imem_response;
+// assume:
+// 	at t: mg_tn_IF_rx(1);
+
+// 	within[t,t+15]: if_parcel_valid == 2'b01;
+
+// 	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
+
+// prove:
+// 	at t: true;
+
+// end property;
+
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         _                  
   ___  | |_    ___   _ __  
@@ -400,7 +415,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property step;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_no_imem_stall, c_imem_response, c_dmem_fairness;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
@@ -554,6 +569,7 @@ assume:
 	at t2_flush_f: mg_tn_flush(2) == false;
 
 	//within[t,t+5]: m_IF_tx && !m_ID_rx;
+	//within[t,t+15]: if_parcel_valid == 2'b01;
 
 	// Configure token counters
 	at t: IF_wcnt == 0;
@@ -602,6 +618,8 @@ assume:
 	during[t,t+v_examination_window]: ME_instr_enum == getInstr(m_ME_instr);
 	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
 
+//during[t,t+v_examination_window]: c/id_stall == 0;
+
 prove:
 	// Prove right hook
 	at t2_IF_rx_n: mg_tn_IF_rx(2);
@@ -616,7 +634,18 @@ prove:
 	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_pc == at_t2_EX_tx_pc endif;
 	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_pc == at_t2_ME_tx_pc endif;
 
-	at t2_ID_tx_f: if (getInstr(at_t2_IF_tx_instr) == JAL_INSTR) next(c/ex_units/bu_nxt_pc) == (at_t2_IF_tx_pc + getImmediate(at_t2_IF_tx_instr))[31:0] endif;
+	at t2_ID_tx_f: if (getInstr(at_t2_IF_tx_instr) == JAL_INSTR)
+			(m_ID_bu_nxt_pc == (at_t2_IF_tx_pc + getImmediate(at_t2_IF_tx_instr))[31:0]) &&
+			(m_ID_bu_flush == true)
+		endif;
+
+	//at tl_ID_tx_f: at_t2_IF_tx_pc == m_ID_bu_nxt_pc;// fails because of pc fetching from memory
+
+	at tl_ID_tx_f: if (getInstr(m_ID_instr) == JAL_INSTR)
+			(at_t2_IF_tx_pc == m_ID_bu_nxt_pc)
+		endif;
+
+
 
 end property;
 
@@ -632,7 +661,7 @@ end property;
 macro unsigned v_examination_window_f1 := 30 end macro;
 
 property step_f1;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_if_stall_nxt_pc_fairness, c_if_parcel_valid_fairness, c_dmem_fairness;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_no_imem_stall, c_imem_response, c_dmem_fairness;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages

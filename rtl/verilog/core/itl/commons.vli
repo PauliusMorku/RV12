@@ -55,13 +55,16 @@ macro unsigned m_EX_pc := c/ex_units/ex_pc end macro;
 macro unsigned m_ME_pc := c/mem_unit/mem_pc end macro;
 macro unsigned m_WB_pc := c/wb_unit/wb_pc_o end macro;
 
+macro unsigned m_ID_bu_nxt_pc := next(c/ex_units/bu_nxt_pc) end macro;
+macro logic m_ID_bu_flush := (getInstr(m_ID_instr) == JAL_INSTR) || next(c/ex_units/bu_flush) end macro;
+
 // Instruction filters are used to constrain the instructions that are read from the memory (to avoid illegal instructions and reduce computation complexity)
 macro bit instr_filter1(unsigned encodedInstr) := 
-	/*(OPCODE_FIELD(encodedInstr) == OPCODE_I_L) ||
-	(OPCODE_FIELD(encodedInstr) == OPCODE_S) ||
-	(OPCODE_FIELD(encodedInstr) == OPCODE_I) ||*/
-	(OPCODE_FIELD(encodedInstr) == OPCODE_R) /*||
-	(OPCODE_FIELD(encodedInstr) == OPCODE_B)*/
+	/*(getOpcode(encodedInstr) == OPCODE_I_L) ||
+	(getOpcode(encodedInstr) == OPCODE_S) ||
+	(getOpcode(encodedInstr) == OPCODE_I) ||*/
+	(getOpcode(encodedInstr) == OPCODE_R) /*||
+	(getOpcode(encodedInstr) == OPCODE_B)*/
 end macro;
 
 
@@ -127,17 +130,119 @@ constraint c_no_bu_flush :=
 	endif;
 end constraint;
 
-constraint c_no_if_stall_nxt_pc :=
+constraint c_no_imem_stall :=
 	if (!m_rst)
-		c/if_stall_nxt_pc == 0;
+		if_stall_nxt_pc == 0;
 	endif;
 end constraint;
 
-constraint c_if_stall_nxt_pc_fairness :=
+constraint c_imem_stall_fairness :=
 	if (!m_rst)
 		exists i in 0..3:
-			next(c/if_stall_nxt_pc,i) == 0;
+			next(if_stall_nxt_pc,i) == 0;
 		end exists;
+	endif;
+end constraint;
+
+macro unsigned imem_slack := 4 end macro;
+constraint c_imem_response :=
+	if (!m_rst)
+		if (if_flush == 0)
+			// Handle if_stall cases by retaining the values
+			if (next(if_flush) == 0)
+				if (if_stall == 1)
+					(next(if_parcel_pc) == if_parcel_pc) &&
+					(next(if_parcel) == if_parcel) &&
+					(next(if_parcel_valid) == if_parcel_valid)
+				endif
+			endif &&
+
+			// Make sure that a response exists for every request or there is a flush request
+			exists i in 1..1+imem_slack:
+				(
+					(next(if_parcel_pc, i) == if_nxt_pc) &&
+					(next(if_parcel_valid,i) == 2'b11)
+				) ||
+				(next(if_flush, i) == 1)
+			end exists &&
+			
+			// Every occurance where pc matches has to be valid (helps to prevent some unwanted behaviour)
+			foreach i in 1..1+imem_slack:
+				if (next(if_flush, i) == 0)
+					if (next(if_parcel_pc,i) == if_nxt_pc)
+						(next(if_parcel_valid,i) == 2'b11)
+					endif
+				endif
+			end foreach &&
+			
+			(
+				// Make sure once response occurs then it is valid till a flush occurs
+				foreach i in 1..1+imem_slack:
+					if ((next(if_flush, i) == 0) && (next(if_flush, i+1) == 0))
+						if (next(if_parcel_pc,i) == if_nxt_pc)
+							if (next(if_stall, i) == 0)
+								(next(if_parcel_pc,i+1) == next(if_nxt_pc)) &&
+								(next(if_parcel_valid,i+1) == 2'b11)
+							endif
+						endif	
+					endif
+				end foreach /*||
+				
+				// Make sure once response occurs then it is valid till a flush occurs with possible clock cycle break
+				foreach i in 1..1+imem_slack-1:
+					if ((next(if_flush, i) == 0) && (next(if_flush, i+1) == 0))
+						if (next(if_parcel_pc,i) == if_nxt_pc)
+							if (next(if_flush, i+2) == 0)
+								if (next(if_stall, i+1) == 0)
+									(next(if_parcel_pc,i+2) == next(if_nxt_pc)) &&
+									(next(if_parcel_valid,i+2) == 2'b11)
+								endif
+							endif &&
+							if (next(if_stall, i) == 0)
+								(next(if_parcel_valid,i+1) == 2'b00)
+							endif
+						endif	
+					endif
+				end foreach*/
+			) &&
+
+			// Make sure that after flush all values are reset till the next response
+			if (fell(if_flush) || fell(m_rst))
+				foreach i in 1..1+imem_slack:
+					if ((next(if_parcel_pc,i) != if_nxt_pc) && (next(if_parcel_valid, i-1) == 2'b00))
+						(next(if_parcel_valid,i) == 2'b00)
+					endif
+				end foreach
+			endif
+
+		else
+			(if_parcel_valid == 2'b00) &&
+			(next(if_parcel_valid) == 2'b00)
+		endif
+	else
+		(if_parcel_valid == 2'b00) &&
+		(next(if_parcel_valid) == 2'b00)
+	endif &&
+
+	// Clean the values if the parcel is not valid
+	if (if_parcel_valid != 2'b11)
+		//(if_parcel_pc == 32'h00000000) &&
+		(if_parcel == 32'h00000000)
+	endif;
+end constraint;
+
+constraint c_imem_response2 :=
+	if (!m_rst)
+		if (if_flush == 1)
+			foreach i in 1..imem_slack:
+				next(if_parcel_valid,i) == 2'b00;
+			end foreach;
+		endif 
+		&&
+		if (foreach i in 1..imem_slack: prev(if_flush,i) == 0 end foreach) 
+			(if_parcel_valid == 2'b11) &&
+			(if_parcel_pc == prev(if_nxt_pc,imem_slack))
+		endif;
 	endif;
 end constraint;
 
@@ -194,7 +299,7 @@ end constraint;
 
 constraint c_if_parcel_valid_fairness :=
 	if (!m_rst)
-		exists i in 0..4:
+		exists i in 0..6:
 			next(c/if_unit/pd_bubble,i) == 0;
 		end exists;
 	endif;

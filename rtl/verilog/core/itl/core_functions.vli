@@ -29,6 +29,8 @@ macro unsigned NEG_IMM_S_FIELD(unsigned x)  := (POS_IMM_S_FIELD(x) | 32'hFFFFF00
 macro unsigned NEG_IMM_B_FIELD(unsigned x)  := (POS_IMM_B_FIELD(x) | 32'hFFFFF000) end macro;
 macro unsigned NEG_IMM_J_FIELD(unsigned x)  := (POS_IMM_J_FIELD(x) | 32'hFFF00000) end macro;
 
+macro unsigned getOpcode(unsigned encodedInstr) := OPCODE_FIELD(encodedInstr) end macro; 
+
 macro unsigned getImmediate(unsigned encodedInstr) := 
     if (OPCODE_FIELD(encodedInstr) == OPCODE_I)
         if (SIGN_FIELD(encodedInstr) == 0)
