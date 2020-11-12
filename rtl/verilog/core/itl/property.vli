@@ -2,10 +2,16 @@
 TODO:
 	-try to match windows exactly (remove overlap)
 */
-
+/*
+im	dm	ew
+0	0	12	
+1	1	17
+2	1	20	
+2	2	22
+*/
 macro unsigned v_imem_slack := 2 end macro;
 macro unsigned v_dmem_slack := 2 end macro;
-macro unsigned v_examination_window := 20 end macro;
+macro unsigned v_examination_window := 22 end macro;
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
              _               _                               _                     _    
@@ -216,8 +222,8 @@ prove:
 	at t1_IF_rx_f: mg_tn_IF_rx(1);
 	at t1_flush_f: mg_tn_flush(1) == false;
 
-	at t1_IF_tx_f: m_IF_pc == prev(c/if_unit/pd_pc);
-	at t1_IF_tx_f: m_IF_instr == prev(c/if_unit/pd_instr);
+	at t1_IF_tx_f: m_IF_pc == PC_INIT;
+	//at t1_IF_tx_f: m_IF_instr == prev(c/if_unit/pd_instr);
 
 end property;
 
