@@ -12,4 +12,5 @@ elaborate -golden
 compile
 set_reset_sequence rstn=0
 set_mode mv
-read_itl  {itl/commons.vli itl/property.vli itl/core_functions.vli}
+set_check_option -verbose
+read_itl  {itl/commons.vli itl/constraints.vli itl/property.vli itl/core_functions.vli}
