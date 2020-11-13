@@ -583,6 +583,9 @@ assume:
 	// Property is triggered whenever a token enters first pipeline stage
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
 
+	// Assume right hook (proven by other properties)
+	at t2_IF_rx_n: mg_tn_IF_rx(2);
+
 	// Define flushing scenario
 	at t1_flush_f: mg_tn_flush(1) == false;
 	at t2_flush_f: mg_tn_flush(2) == false;
@@ -641,7 +644,7 @@ assume:
 
 prove:
 	// Prove right hook
-	at t2_IF_rx_n: mg_tn_IF_rx(2);
+	//at t2_IF_rx_n: mg_tn_IF_rx(2);
 
 	at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_instr == at_t2_IF_tx_instr endif;
 	at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_instr == at_t2_ID_tx_instr endif;
