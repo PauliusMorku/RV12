@@ -85,18 +85,22 @@ module top #(
   output                           dbg_bp,
 
   // Verification related signals
+  input                            PF_trem,
   input                            IF_trem,
   input                            ID_trem,
   input                            EX_trem,
   input                            ME_trem,
   input                            WB_trem,
 
+  input                            PF_wcnt_inc,
   input                            IF_wcnt_inc,
   input                            ID_wcnt_inc,
   input                            EX_wcnt_inc,
   input                            ME_wcnt_inc,
   input                            WB_wcnt_inc,
 
+  input                            tl_PF_tx_wait,
+  input                            tl_IF_rx_wait,
   input                            tl_IF_tx_wait,
   input                            tl_ID_rx_wait,
   input                            tl_ID_tx_wait,
@@ -107,6 +111,8 @@ module top #(
   input                            tl_WB_rx_wait,
   input                            tl_WB_tx_wait,
 
+  input                            t1_PF_tx_wait,
+  input                            t1_IF_rx_wait,
   input                            t1_IF_tx_wait,
   input                            t1_ID_rx_wait,
   input                            t1_ID_tx_wait,
@@ -117,6 +123,8 @@ module top #(
   input                            t1_WB_rx_wait,
   input                            t1_WB_tx_wait,
 
+  input                            t2_PF_tx_wait,
+  input                            t2_IF_rx_wait,
   input                            t2_IF_tx_wait,
   input                            t2_ID_rx_wait,
   input                            t2_ID_tx_wait,
@@ -127,6 +135,8 @@ module top #(
   input                            t2_WB_rx_wait,
   input                            t2_WB_tx_wait,
 
+  input                            t3_PF_tx_wait,
+  input                            t3_IF_rx_wait,
   input                            t3_IF_tx_wait,
   input                            t3_ID_rx_wait,
   input                            t3_ID_tx_wait,
@@ -138,6 +148,7 @@ module top #(
   input                            t3_WB_tx_wait,
 
   // For debugging
+  input Instr_t PF_instr_enum,
   input Instr_t IF_instr_enum,
   input Instr_t ID_instr_enum,
   input Instr_t EX_instr_enum,
@@ -145,18 +156,21 @@ module top #(
   input Instr_t WB_instr_enum
 );
 
+  logic [5:0] PF_wcnt;
   logic [5:0] IF_wcnt;
   logic [5:0] ID_wcnt;
   logic [5:0] EX_wcnt;
   logic [5:0] ME_wcnt;
   logic [5:0] WB_wcnt;
 
+  logic [5:0] PF_tcnt;
   logic [5:0] IF_tcnt;
   logic [5:0] ID_tcnt;
   logic [5:0] EX_tcnt;
   logic [5:0] ME_tcnt;
   logic [5:0] WB_tcnt;
 
+  logic PF_tcnt_gate;
   logic IF_tcnt_gate;
   logic ID_tcnt_gate;
   logic EX_tcnt_gate;
@@ -166,6 +180,8 @@ module top #(
   always_ff @(posedge clk)
   begin
     // Note: **_tcnt_gate values can be overwritten by the lower section
+    if (PF_trem)
+      PF_tcnt_gate <= 0;
     if (IF_trem)
       IF_tcnt_gate <= 0;
     if (ID_trem)
@@ -177,9 +193,14 @@ module top #(
     if (WB_trem)
       WB_tcnt_gate <= 0;
 
+    if (PF_wcnt_inc)
+    begin
+      PF_wcnt <= $size(PF_wcnt)'($size(PF_wcnt+1)'(PF_wcnt)+1);
+      PF_tcnt_gate <= 1;
+    end
     if (IF_wcnt_inc)
     begin
-      IF_wcnt <= $size(IF_wcnt)'($size(IF_wcnt+1)'(IF_wcnt)+1);
+      IF_wcnt <= PF_wcnt;
       IF_tcnt_gate <= 1;
     end
     if (ID_wcnt_inc)
@@ -204,6 +225,7 @@ module top #(
     end
   end
 
+assign PF_tcnt = PF_tcnt_gate ? PF_wcnt : 0;
 assign IF_tcnt = IF_tcnt_gate ? IF_wcnt : 0;
 assign ID_tcnt = ID_tcnt_gate ? ID_wcnt : 0;
 assign EX_tcnt = EX_tcnt_gate ? EX_wcnt : 0;

@@ -1,3 +1,7 @@
+// Special instructions
+macro unsigned INSTR_NOP := 32'h00000013 end macro;
+macro unsigned INSTR_WFI := 32'h10500073 end macro;
+
 // Opcodes
 macro unsigned OPCODE_U_LUI		:= 32'h00000037 end macro; //0110111
 macro unsigned OPCODE_U_AUIPC 	:= 32'h00000017 end macro; //0010111

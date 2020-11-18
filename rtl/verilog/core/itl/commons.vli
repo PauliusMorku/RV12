@@ -26,7 +26,9 @@ macro logic m_ME_tx := m_WB_rx end macro;
 macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 */
 
-macro logic m_IF_rx := (((c/if_unit/if_bubble == 0) && (c/if_unit/id_stall == 0)) || prev(m_rst)) end macro;
+macro logic m_PF_rx := (((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) || prev(m_rst)) end macro;
+macro logic m_PF_tx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) end macro;
+macro logic m_IF_rx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) end macro;
 macro logic m_IF_tx := ((c/if_unit/if_bubble == 0) && (c/if_unit/id_stall == 0)) end macro;
 macro logic m_ID_rx := ((c/id_unit/if_bubble == 0) && (c/id_unit/id_stall == 0) && (c/id_unit/stall == 0)) end macro;
 macro logic m_ID_tx := ((c/id_unit/id_bubble == 0) && (c/id_unit/ex_stall == 0)) end macro;
@@ -37,18 +39,23 @@ macro logic m_ME_tx := ((c/mem_unit/mem_bubble == 0) && (c/mem_unit/wb_stall == 
 macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/wb_stall_o == 0)) end macro;
 macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 
+macro logic m_PF_port_rx := (if_parcel_valid == 2'b11) && !if_flush end macro;
+
+macro logic m_PF_flush := 0 end macro;
 macro logic m_IF_flush := 0 end macro;
 macro logic m_ID_flush := m_IF_tx && !m_ID_rx end macro;
 macro logic m_EX_flush := c/ex_units/bu_flush end macro;
 macro logic m_ME_flush := 0 end macro;
 macro logic m_WB_flush := 0 end macro;
 
+macro unsigned m_PF_instr := c/if_unit/pd_instr end macro;
 macro unsigned m_IF_instr := c/if_unit/if_instr end macro;
 macro unsigned m_ID_instr := c/id_unit/id_instr end macro;
 macro unsigned m_EX_instr := c/ex_units/ex_instr end macro;
 macro unsigned m_ME_instr := c/mem_unit/mem_instr end macro;
 macro unsigned m_WB_instr := c/wb_unit/wb_instr_o end macro;
 
+macro unsigned m_PF_pc := c/if_unit/pd_pc end macro;
 macro unsigned m_IF_pc := c/if_unit/if_pc end macro;
 macro unsigned m_ID_pc := c/id_unit/id_pc end macro;
 macro unsigned m_EX_pc := c/ex_units/ex_pc end macro;
@@ -108,7 +115,9 @@ end macro;
 // Macros that serve as helpers, eventually should be (g)enerated and not modified by the user
 
 // tl stands for last token
-macro logic mg_tl_IF_tx := mg_tn_IF_tx(1) end macro;
+macro logic mg_tl_PF_tx := mg_tn_PF_tx(1) end macro;
+macro logic mg_tl_IF_rx := (m_IF_rx && next(IF_wcnt <= 1) && next(!tl_PF_tx_wait)) end macro;
+macro logic mg_tl_IF_tx := (m_IF_tx && (IF_wcnt <= 1) && !tl_IF_rx_wait) end macro;
 macro logic mg_tl_ID_rx := (m_ID_rx && next(ID_wcnt <= 1) && next(!tl_IF_tx_wait)) end macro;
 macro logic mg_tl_ID_tx := (m_ID_tx && (ID_wcnt <= 1) && !tl_ID_rx_wait) end macro;
 macro logic mg_tl_EX_rx := (m_EX_rx && next(EX_wcnt <= 1) && next(!tl_ID_tx_wait)) end macro;
@@ -129,12 +138,14 @@ macro logic mg_t0_ME_tx := (m_ME_tx && (ME_wcnt == 0) && !t0_ME_rx_wait) end mac
 macro logic mg_t0_WB_tx := (m_WB_tx && (WB_wcnt == 0) && !t0_WB_rx_wait) end macro;
 */
 
+macro logic mg_tn_PF_rx(numeric n) := ((PF_wcnt != n) && next(PF_wcnt == n)) end macro;
 macro logic mg_tn_IF_rx(numeric n) := ((IF_wcnt != n) && next(IF_wcnt == n)) end macro;
 macro logic mg_tn_ID_rx(numeric n) := ((ID_wcnt != n) && next(ID_wcnt == n)) end macro;
 macro logic mg_tn_EX_rx(numeric n) := ((EX_wcnt != n) && next(EX_wcnt == n)) end macro;
 macro logic mg_tn_ME_rx(numeric n) := ((ME_wcnt != n) && next(ME_wcnt == n)) end macro;
 macro logic mg_tn_WB_rx(numeric n) := ((WB_wcnt != n) && next(WB_wcnt == n)) end macro;
 
+macro logic mg_tn_PF_tx(numeric n) := (m_PF_tx && (PF_wcnt == n)) end macro;
 macro logic mg_tn_IF_tx(numeric n) := (m_IF_tx && (IF_wcnt == n)) end macro;
 macro logic mg_tn_ID_tx(numeric n) := (m_ID_tx && (ID_wcnt == n)) end macro;
 macro logic mg_tn_EX_tx(numeric n) := (m_EX_tx && (EX_wcnt == n)) end macro;
@@ -142,11 +153,13 @@ macro logic mg_tn_ME_tx(numeric n) := (m_ME_tx && (ME_wcnt == n)) end macro;
 macro logic mg_tn_WB_tx(numeric n) := (m_WB_tx && (WB_wcnt == n)) end macro;
 
 // TODO if there is skipped stage flush can be still triggered
+macro logic mg_tl_IF_flush := (m_IF_flush && (IF_wcnt == 0)) end macro;
 macro logic mg_tl_ID_flush := (m_ID_flush && (ID_wcnt == 0)) end macro;
 macro logic mg_tl_EX_flush := (m_EX_flush && (EX_wcnt == 0)) end macro;
 macro logic mg_tl_ME_flush := (m_ME_flush && (ME_wcnt == 0)) end macro;
 macro logic mg_tl_WB_flush := (m_WB_flush && (WB_wcnt == 0)) end macro;
 
+macro logic mg_t1_IF_flush := (m_IF_flush && (IF_wcnt == 1)) end macro;
 macro logic mg_t1_ID_flush := (m_ID_flush && (ID_wcnt == 1)) end macro;
 macro logic mg_t1_EX_flush := (m_EX_flush && (EX_wcnt == 1)) end macro;
 macro logic mg_t1_ME_flush := (m_ME_flush && (ME_wcnt == 1)) end macro;
@@ -154,9 +167,9 @@ macro logic mg_t1_WB_flush := (m_WB_flush && (WB_wcnt == 1)) end macro;
 
 macro logic mg_tn_flush(numeric n) := 
 	if (n == 1)
-		((mg_tl_ID_flush || mg_tl_EX_flush || mg_tl_ME_flush || mg_tl_WB_flush) && (IF_wcnt >= n));
+		((mg_tl_IF_flush || mg_tl_ID_flush || mg_tl_EX_flush || mg_tl_ME_flush || mg_tl_WB_flush) && (PF_wcnt >= n));
 	elseif (n > 1)
-		((mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (IF_wcnt >= n));
+		((mg_t1_IF_flush || mg_t1_ID_flush || mg_t1_EX_flush || mg_t1_ME_flush || mg_t1_WB_flush) && (PF_wcnt >= n));
 	else
 		false;
 	endif;
