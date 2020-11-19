@@ -140,6 +140,20 @@ macro logic mg_t0_ME_tx := (m_ME_tx && (ME_wcnt == 0) && !t0_ME_rx_wait) end mac
 macro logic mg_t0_WB_tx := (m_WB_tx && (WB_wcnt == 0) && !t0_WB_rx_wait) end macro;
 */
 
+
+
+macro logic mg_tn_PF_port_rx(numeric n) := ((PF_wcnt == n) && m_PF_port_rx) end macro;
+
+macro logic mg_tn_PF_lim(numeric n) := (next(PF_wcnt) > n) end macro;
+macro logic mg_tn_IF_lim(numeric n) := (next(IF_wcnt) > n) end macro;
+macro logic mg_tn_ID_lim(numeric n) := (next(ID_wcnt) > n) end macro;
+macro logic mg_tn_EX_lim(numeric n) := (next(EX_wcnt) > n) end macro;
+macro logic mg_tn_ME_lim(numeric n) := (next(ME_wcnt) > n) end macro;
+macro logic mg_tn_WB_lim(numeric n) := (next(WB_wcnt) > n) end macro;
+
+macro logic mg_flag_wait(logic flag) := next(!flag) end macro;
+
+
 macro logic mg_tn_PF_rx(numeric n) := ((PF_wcnt != n) && next(PF_wcnt == n)) end macro;
 macro logic mg_tn_IF_rx(numeric n) := ((IF_wcnt != n) && next(IF_wcnt == n)) end macro;
 macro logic mg_tn_ID_rx(numeric n) := ((ID_wcnt != n) && next(ID_wcnt == n)) end macro;
