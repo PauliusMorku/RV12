@@ -39,7 +39,9 @@ macro logic m_ME_tx := ((c/mem_unit/mem_bubble == 0) && (c/mem_unit/wb_stall == 
 macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/wb_stall_o == 0)) end macro;
 macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 
-macro logic m_PF_port_rx := (if_parcel_valid == 2'b11) && !if_flush end macro;
+macro logic m_PF_port_rx := prev(if_parcel_valid == 2'b11 && !if_flush && !if_stall) end macro;
+macro unsigned m_PF_port_instr := prev(if_parcel) end macro;
+macro unsigned m_PF_port_pc := prev(if_parcel_pc) end macro;
 
 macro logic m_PF_flush := 0 end macro;
 macro logic m_IF_flush := 0 end macro;

@@ -19,7 +19,7 @@ im	dm	ew
 */
 macro unsigned v_imem_slack := 2 end macro;
 macro unsigned v_dmem_slack := 2 end macro;
-macro unsigned v_examination_window := 25 end macro;
+macro unsigned v_examination_window := 30 end macro;
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,6 +38,7 @@ property window_check;
 dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 
 for timepoints:
+	t2_PF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_tx(2),
 	t2_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(2),
 	t2_ID_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ID_tx(2),
 	t2_EX_tx_f = t + 0..v_examination_window waits_for complete mg_tn_EX_tx(2),
@@ -47,6 +48,7 @@ for timepoints:
 	t_dummy = t; // last dummy line (for the semicolon)
 
 freeze:
+	at_t2_PF_tx_exist = mg_tn_PF_tx(2)@t2_PF_tx_f,
 	at_t2_IF_tx_exist = mg_tn_IF_tx(2)@t2_IF_tx_f,
 	at_t2_ID_tx_exist = mg_tn_ID_tx(2)@t2_ID_tx_f,
 	at_t2_EX_tx_exist = mg_tn_EX_tx(2)@t2_EX_tx_f,
@@ -60,6 +62,9 @@ assume:
 	// Need separate property to check each stage tx case
 	// TODO: Find a simple way to combine these assumptions?
 	// Note that each tx has to be the first occurance otherwise the property is not correct
+
+	// at t+v_examination_window: mg_tn_PF_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_PF_tx(2);
 
 	// at t+v_examination_window: mg_tn_IF_tx(2);
 	// during[t,t+v_examination_window-1]: !mg_tn_IF_tx(2);
@@ -79,6 +84,7 @@ assume:
 
 
 	at t+v_examination_window: (
+			fell(next(t2_PF_tx_wait)) || 
 			fell(next(t2_IF_tx_wait)) || 
 			fell(next(t2_ID_tx_wait)) || 
 			fell(next(t2_EX_tx_wait)) || 
@@ -87,24 +93,28 @@ assume:
 		);
 
 	// Configure transaction flag variables
+	mg_flag_define(t2_PF_tx_wait, at_t2_PF_tx_exist, v_examination_window, t2_PF_tx_f);
 	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
 	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
 	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
 	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
 	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
 
-    // Configure token counters, note that IF_wcnt is not fixed on purpose since the property goes backwards. Fixing it would cause property to be unreachable
+    // Configure token counters, note that PF_wcnt is not fixed on purpose since the property goes backwards. Fixing it would cause property to be unreachable
+    at t: IF_wcnt == 0;
     at t: ID_wcnt == 0;
 	at t: EX_wcnt == 0;
 	at t: ME_wcnt == 0;
 	at t: WB_wcnt == 0;
 
+	during[t,t+v_examination_window]: PF_wcnt_inc == m_PF_rx;
 	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
 	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
 	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
 	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
 	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
 
+	during[t,t+v_examination_window]: PF_trem == m_PF_tx;
 	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
 	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
 	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
@@ -114,8 +124,16 @@ assume:
 	// Configure reset overlap
 	during[t,t+v_examination_window]: !rose(m_rst); // Once the reset is released it can not be triggered again
 
+	// For debugging
+	during[t,t+v_examination_window]: PF_instr_enum == getInstr(m_PF_instr);
+	during[t,t+v_examination_window]: IF_instr_enum == getInstr(m_IF_instr);
+	during[t,t+v_examination_window]: ID_instr_enum == getInstr(m_ID_instr);
+	during[t,t+v_examination_window]: EX_instr_enum == getInstr(m_EX_instr);
+	during[t,t+v_examination_window]: ME_instr_enum == getInstr(m_ME_instr);
+	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
+
 prove:
-	within[t,t+v_examination_window]: mg_tn_IF_rx(1);
+	within[t,t+v_examination_window]: mg_tn_PF_rx(1);
 
 end property;
 
@@ -337,18 +355,21 @@ assume:
 	at t: !at_t1_flush_exist;
 
     // Configure token counters
+    at t: PF_wcnt == 0;
 	at t: IF_wcnt == 0;
 	at t: ID_wcnt == 0;
 	at t: EX_wcnt == 0;
 	at t: ME_wcnt == 0;
 	at t: WB_wcnt == 0;
 
+	during[t,t+v_examination_window]: PF_wcnt_inc == m_PF_rx;
 	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
 	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
 	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
 	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
 	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
 
+	during[t,t+v_examination_window]: PF_trem == m_PF_tx;
 	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
 	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
 	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
@@ -433,12 +454,14 @@ assume:
 	at t1_IF_rx_n: mg_tn_IF_rx(1);
 
 	// Configure token counters
+    at t: PF_wcnt == 0;
 	at t: IF_wcnt == 0;
 	at t: ID_wcnt == 0;
 	at t: EX_wcnt == 0;
 	at t: ME_wcnt == 0;
 	at t: WB_wcnt == 0;
 
+	during[t,t+v_examination_window]: PF_wcnt_inc == m_PF_rx;
 	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
 	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
 	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
@@ -511,8 +534,16 @@ for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
 	// tl detection
+	tl_PF_tx_f = t + 0..v_examination_window waits_for complete mg_tl_PF_tx,
+	tl_PF_tx_l = t + 0..v_examination_window waits_for complete next(!tl_PF_tx_wait), // Occurance after t
+
+	tl_IF_rx_f = t + 0..v_examination_window waits_for complete mg_tl_IF_rx,
+	tl_IF_rx_l1 = t + 0..v_examination_window waits_for complete next(!tl_IF_rx_wait), // Occurance after tl_PF_tx_l
+	tl_IF_rx_l = max_timepoint(tl_IF_rx_l1, tl_PF_tx_l), 
+
 	tl_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tl_IF_tx,
-	tl_IF_tx_l = t + 0..v_examination_window waits_for complete next(!tl_IF_tx_wait), // Occurance after t
+	tl_IF_tx_l1 = t + 0..v_examination_window waits_for complete next(!tl_IF_tx_wait), // Occurance after tl_IF_rx_l1+1
+	tl_IF_tx_l = max_timepoint(tl_IF_tx_l1, tl_IF_rx_l),
 
 	tl_ID_rx_f = t + 0..v_examination_window waits_for complete mg_tl_ID_rx,
 	tl_ID_rx_l1 = t + 0..v_examination_window waits_for complete next(!tl_ID_rx_wait), // Occurance after tl_IF_tx_l
@@ -548,18 +579,30 @@ for timepoints:
 
 
 	// t1 detection
-	t1_IF_rx_n = t,
+	t1_PF_rx_n = t,
 
 	// t2 detection
-	t2_IF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(2),
+	t2_PF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(2),
 
-	t2_IF_port_rx = t + 0..v_examination_window waits_for complete ((IF_wcnt == 2) && m_IF_port_rx),
+	t2_PF_port_rx = t + 0..v_examination_window waits_for complete ((PF_wcnt == 2) && m_PF_port_rx),
+
+	t2_PF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_tx(2),
+	t2_PF_tx_l1 = t + 0..v_examination_window waits_for complete next(!t2_PF_tx_wait),
+	t2_PF_tx_l = max_timepoint(t2_PF_tx_l1, t2_PF_rx_n),
+
+	t2_PF_wn_l = t2_PF_rx_n,
+	t2_PF_wn_r = t + 0..v_examination_window waits_for complete (next(PF_wcnt) > 2),
+
+	t2_IF_rx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_rx(2),
+	t2_IF_rx_l1 = t + 0..v_examination_window waits_for complete next(!t2_IF_rx_wait),
+	t2_IF_rx_l2 = max_timepoint(t2_IF_rx_l1, t2_PF_tx_l),
+	t2_IF_rx_l = max_timepoint(t2_IF_rx_l2, tl_ID_rx_l),
 
 	t2_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(2),
 	t2_IF_tx_l1 = t + 0..v_examination_window waits_for complete next(!t2_IF_tx_wait),
-	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_n),
+	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_l),
 
-	t2_IF_wn_l = t2_IF_rx_n,
+	t2_IF_wn_l = t2_IF_rx_l,
 	t2_IF_wn_r = t + 0..v_examination_window waits_for complete (next(IF_wcnt) > 2),
 
 	t2_ID_rx_f = t + 0..v_examination_window waits_for complete mg_tn_ID_rx(2),
@@ -619,6 +662,8 @@ for timepoints:
 	t_dummy = t; // last dummy line (for the semicolon)
 
 freeze:
+	at_tl_PF_tx_exist = mg_tl_PF_tx@tl_PF_tx_f,
+	at_tl_IF_rx_exist = mg_tl_IF_rx@tl_IF_rx_f,
 	at_tl_IF_tx_exist = mg_tl_IF_tx@tl_IF_tx_f,
 	at_tl_ID_rx_exist = mg_tl_ID_rx@tl_ID_rx_f,
 	at_tl_ID_tx_exist = mg_tl_ID_tx@tl_ID_tx_f,
@@ -629,6 +674,8 @@ freeze:
 	at_tl_WB_rx_exist = mg_tl_WB_rx@tl_WB_rx_f,
 	at_tl_WB_tx_exist = mg_tl_WB_tx@tl_WB_tx_f,
 
+	at_t2_PF_tx_exist = mg_tn_PF_tx(2)@t2_PF_tx_f,
+	at_t2_IF_rx_exist = mg_tn_IF_rx(2)@t2_IF_rx_f,
 	at_t2_IF_tx_exist = mg_tn_IF_tx(2)@t2_IF_tx_f,
 	at_t2_ID_rx_exist = mg_tn_ID_rx(2)@t2_ID_rx_f,
 	at_t2_ID_tx_exist = mg_tn_ID_tx(2)@t2_ID_tx_f,
@@ -639,28 +686,31 @@ freeze:
 	at_t2_WB_rx_exist = mg_tn_WB_rx(2)@t2_WB_rx_f,
 	at_t2_WB_tx_exist = mg_tn_WB_tx(2)@t2_WB_tx_f,
 
+	at_t2_PF_tx_instr = m_PF_instr@t2_PF_tx_f,
 	at_t2_IF_tx_instr = m_IF_instr@t2_IF_tx_f,
 	at_t2_ID_tx_instr = m_ID_instr@t2_ID_tx_f,
 	at_t2_EX_tx_instr = m_EX_instr@t2_EX_tx_f,
 	at_t2_ME_tx_instr = m_ME_instr@t2_ME_tx_f,
 	at_t2_WB_tx_instr = m_WB_instr@t2_WB_tx_f,
 
+	at_t2_PF_tx_pc = m_PF_pc@t2_PF_tx_f,
 	at_t2_IF_tx_pc = m_IF_pc@t2_IF_tx_f,
 	at_t2_ID_tx_pc = m_ID_pc@t2_ID_tx_f,
 	at_t2_EX_tx_pc = m_EX_pc@t2_EX_tx_f,
 	at_t2_ME_tx_pc = m_ME_pc@t2_ME_tx_f,
 	at_t2_WB_tx_pc = m_WB_pc@t2_WB_tx_f,
 
-	at_t2_if_parcel = if_parcel@t2_IF_port_rx,
+	at_t2_PF_port_instr = m_PF_port_instr@t2_PF_port_rx,
+	at_t2_PF_port_pc = m_PF_port_pc@t2_PF_port_rx,
 
 	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
 
 assume:
 	// Property is triggered whenever a token enters first pipeline stage
-	at t1_IF_rx_n: mg_tn_IF_rx(1);
+	at t1_PF_rx_n: mg_tn_PF_rx(1);
 
 	// Assume right hook (proven by other properties)
-	at t2_IF_rx_n: mg_tn_IF_rx(2);
+	at t2_PF_rx_n: mg_tn_PF_rx(2);
 
 	// Define flushing scenario
 	at t1_flush_f: mg_tn_flush(1) == false;
@@ -670,18 +720,21 @@ assume:
 	//within[t,t+15]: if_parcel_valid == 2'b01;
 
 	// Configure token counters
+	at t: PF_wcnt == 0;
 	at t: IF_wcnt == 0;
 	at t: ID_wcnt == 0;
 	at t: EX_wcnt == 0;
 	at t: ME_wcnt == 0;
 	at t: WB_wcnt == 0;
 
+	during[t,t+v_examination_window]: PF_wcnt_inc == m_PF_rx;
 	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
 	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
 	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
 	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
 	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
 
+	during[t,t+v_examination_window]: PF_trem == m_PF_tx;
 	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
 	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
 	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
@@ -689,6 +742,8 @@ assume:
 	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
 
 	// Configure transaction flag variables
+	mg_flag_define(tl_PF_tx_wait, at_tl_PF_tx_exist, v_examination_window, tl_PF_tx_f);
+	mg_flag_define(tl_IF_rx_wait, at_tl_IF_rx_exist, v_examination_window, tl_IF_rx_f);
 	mg_flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window, tl_IF_tx_f);
 	mg_flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window, tl_ID_rx_f);
 	mg_flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window, tl_ID_tx_f);
@@ -699,6 +754,8 @@ assume:
 	mg_flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window, tl_WB_rx_f);
 	mg_flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window, tl_WB_tx_f);
 
+	mg_flag_define(t2_PF_tx_wait, at_t2_PF_tx_exist, v_examination_window, t2_PF_tx_f);
+	mg_flag_define(t2_IF_rx_wait, at_t2_IF_rx_exist, v_examination_window, t2_IF_rx_f);
 	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
 	mg_flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window, t2_ID_rx_f);
 	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
@@ -710,6 +767,7 @@ assume:
 	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
 
 	// For debugging
+	during[t,t+v_examination_window]: PF_instr_enum == getInstr(m_PF_instr);
 	during[t,t+v_examination_window]: IF_instr_enum == getInstr(m_IF_instr);
 	during[t,t+v_examination_window]: ID_instr_enum == getInstr(m_ID_instr);
 	during[t,t+v_examination_window]: EX_instr_enum == getInstr(m_EX_instr);
@@ -720,20 +778,21 @@ assume:
 
 prove:
 	// Prove right hook
-	//at t2_IF_rx_n: mg_tn_IF_rx(2);
+	//at t2_PF_rx_n: mg_tn_PF_rx(2);
 
+	at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_instr == ((at_t2_PF_port_instr != INSTR_WFI) ? at_t2_PF_port_instr : INSTR_NOP) endif;
+	at t2_IF_tx_f: if (at_t2_IF_tx_exist) m_IF_instr == at_t2_PF_tx_instr endif;
 	at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_instr == at_t2_IF_tx_instr endif;
 	at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_instr == at_t2_ID_tx_instr endif;
 	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_instr == at_t2_EX_tx_instr endif;
 	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_instr == at_t2_ME_tx_instr endif;
 
+	at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_pc == at_t2_PF_port_pc endif;
+	at t2_IF_tx_f: if (at_t2_IF_tx_exist) m_IF_pc == at_t2_PF_tx_pc endif;
 	at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_pc == at_t2_IF_tx_pc endif;
 	at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_pc == at_t2_ID_tx_pc endif;
 	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_pc == at_t2_EX_tx_pc endif;
 	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_pc == at_t2_ME_tx_pc endif;
-
-	//at t2_IF_tx_f: m_IF_instr == prev(c/if_unit/pd_instr);
-	at t2_IF_tx_f: m_IF_instr == ((prev(if_parcel,2) != INSTR_WFI) ? prev(if_parcel,2) : INSTR_NOP);
 
 	at t2_ID_tx_f: if (getInstr(at_t2_IF_tx_instr) == JAL_INSTR)
 			(m_ID_bu_nxt_pc == (at_t2_IF_tx_pc + getImmediate(at_t2_IF_tx_instr))[31:0]) &&
@@ -762,7 +821,7 @@ end property;
                          888                              
                          888                              
                          888
-                         S                            
+
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 macro unsigned v_examination_window_f1 := 30 end macro;
@@ -991,17 +1050,21 @@ assume:
 	at t3_flush_f: mg_tn_flush(3) == false;
 
 	// Configure token counters
+	at t: PF_wcnt == 0;
 	at t: IF_wcnt == 0;
-	during[t,t+v_examination_window_f1]: IF_wcnt_inc == m_IF_rx;
 	at t: ID_wcnt == 0;
-	during[t,t+v_examination_window_f1]: ID_wcnt_inc == m_ID_rx;
 	at t: EX_wcnt == 0;
-	during[t,t+v_examination_window_f1]: EX_wcnt_inc == m_EX_rx;
 	at t: ME_wcnt == 0;
-	during[t,t+v_examination_window_f1]: ME_wcnt_inc == m_ME_rx;
 	at t: WB_wcnt == 0;
-	during[t,t+v_examination_window_f1]: WB_wcnt_inc == m_WB_rx;
 
+	during[t,t+v_examination_window]: PF_wcnt_inc == m_PF_rx;
+	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
+	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
+	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
+	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
+	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
+
+	during[t,t+v_examination_window]: PF_trem == m_PF_tx;
 	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
 	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
 	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
