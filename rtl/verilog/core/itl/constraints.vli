@@ -36,6 +36,8 @@ constraint c_imem_response_simple :=
 	if (if_parcel_valid != 2'b11)
 		(if_parcel == 32'h00000000) &&
 		(if_parcel_pc == 32'h00000000)
+	// else
+	// 	(if_parcel == 32'h00000000)
 	endif;
 end constraint;
 
@@ -199,11 +201,12 @@ end constraint;
 
 constraint c_no_exception :=
 	if (!m_rst)
-		c/if_exception == 0 &&
-		c/ex_exception == 0 &&
-		c/mem_exception == 0 &&
-		c/wb_exception == 0 &&
-		c/id_exception == 0;
+		(c/if_exception == 0) &&
+		(c/id_exception == 0) &&
+		(c/ex_exception == 0) &&
+		(c/mem_exception == 0) &&
+		(c/wb_exception == 0) &&
+		(c/du_exception == 0);
 	endif;
 end constraint;
 

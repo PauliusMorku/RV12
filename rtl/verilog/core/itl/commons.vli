@@ -26,20 +26,32 @@ macro logic m_ME_tx := m_WB_rx end macro;
 macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
 */
 
-macro logic m_PF_rx := (((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) || prev(m_rst)) end macro;
-macro logic m_PF_tx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) end macro;
-macro logic m_IF_rx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) end macro;
-macro logic m_IF_tx := ((c/if_unit/if_bubble == 0) && (c/if_unit/id_stall == 0)) end macro;
-macro logic m_ID_rx := ((c/id_unit/if_bubble == 0) && (c/id_unit/id_stall == 0) && (c/id_unit/stall == 0)) end macro;
-macro logic m_ID_tx := ((c/id_unit/id_bubble == 0) && (c/id_unit/ex_stall == 0)) end macro;
-macro logic m_EX_rx := ((c/ex_units/id_bubble == 0) && (c/ex_units/ex_stall == 0)) end macro;
-macro logic m_EX_tx := (((c/ex_units/ex_bubble == 0) && (c/ex_units/wb_stall == 0)) || c/ex_units/bu_flush) end macro;
-macro logic m_ME_rx := ((c/mem_unit/ex_bubble == 0) && (c/mem_unit/wb_stall == 0)) end macro;
-macro logic m_ME_tx := ((c/mem_unit/mem_bubble == 0) && (c/mem_unit/wb_stall == 0)) end macro;
-macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/wb_stall_o == 0)) end macro;
-macro logic m_WB_tx := prev(c/wb_unit/wb_stall_o == 0) end macro;
+// Special instructions
+macro unsigned INSTR_NOP := 32'h00000013 end macro;
+macro unsigned INSTR_WFI := 32'h10500073 end macro;
+macro unsigned INSTR_ILLEGAL := 32'hFFFFFFFF end macro;
 
-macro logic m_PF_port_rx := prev(if_parcel_valid == 2'b11 && !if_flush && !if_stall) end macro;
+
+macro logic m_PF_rx := (((c/if_unit/pd_bubble == 0) /*&& (c/if_unit/if_stall == 0)*/) || prev(m_rst)) end macro;
+macro logic m_PF_tx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/pd_instr != INSTR_ILLEGAL) /*&& (c/if_unit/if_stall == 0)*/) end macro;
+
+macro logic m_IF_rx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/pd_instr != INSTR_ILLEGAL) && (c/if_unit/id_stall == 0)) end macro;
+macro logic m_IF_tx := ((c/if_unit/if_bubble == 0) && (c/if_unit/if_instr != INSTR_ILLEGAL) /*&& (c/if_unit/id_stall == 0)*/) end macro;
+
+macro logic m_ID_rx := ((c/id_unit/if_bubble == 0) && (c/id_unit/if_instr != INSTR_ILLEGAL) /*&& (c/id_unit/id_stall == 0) && (c/id_unit/stall == 0)*/) end macro;
+macro logic m_ID_tx := ((c/id_unit/id_bubble == 0) && (c/id_unit/id_instr != INSTR_ILLEGAL) /*&& (c/id_unit/ex_stall == 0)*/) end macro;
+
+macro logic m_EX_rx := ((c/ex_units/id_bubble == 0) && (c/ex_units/id_instr != INSTR_ILLEGAL) /*&& (c/ex_units/ex_stall == 0)*/) end macro;
+macro logic m_EX_tx := (((c/ex_units/ex_bubble == 0) && (c/ex_units/ex_instr != INSTR_ILLEGAL) /*&& (c/ex_units/wb_stall == 0)*/)/* || (c/ex_units/bu_flush == 1)*/) end macro;
+
+macro logic m_ME_rx := ((c/mem_unit/ex_bubble == 0) && (c/mem_unit/ex_instr != INSTR_ILLEGAL) /*&& (c/mem_unit/wb_stall == 0)*/) end macro;
+macro logic m_ME_tx := ((c/mem_unit/mem_bubble == 0) && (c/mem_unit/mem_instr != INSTR_ILLEGAL) && (c/mem_unit/wb_stall == 0)) end macro;
+
+macro logic m_WB_rx := ((c/wb_unit/mem_bubble_i == 0) && (c/wb_unit/mem_instr_i != INSTR_ILLEGAL) && (c/wb_unit/wb_stall_o == 0)) end macro;
+macro logic m_WB_tx := ((c/wb_unit/wb_bubble_o == 0) && (c/wb_unit/wb_instr_o != INSTR_ILLEGAL)) end macro;
+
+
+macro logic m_PF_port_rx := prev(if_parcel_valid == 2'b11 && !if_flush && !if_stall) /*&& !(if_flush && !c/if_unit/branch_taken) && !if_stall*/ end macro;
 macro unsigned m_PF_port_instr := prev(if_parcel) end macro;
 macro unsigned m_PF_port_pc := prev(if_parcel_pc) end macro;
 

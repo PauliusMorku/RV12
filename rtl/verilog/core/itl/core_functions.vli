@@ -1,7 +1,3 @@
-// Special instructions
-macro unsigned INSTR_NOP := 32'h00000013 end macro;
-macro unsigned INSTR_WFI := 32'h10500073 end macro;
-
 // Opcodes
 macro unsigned OPCODE_U_LUI		:= 32'h00000037 end macro; //0110111
 macro unsigned OPCODE_U_AUIPC 	:= 32'h00000017 end macro; //0010111
@@ -82,7 +78,8 @@ macro unsigned getImmediate(unsigned encodedInstr) :=
 end macro;
 
 macro expr getInstr(unsigned encodedInstr) := 
-	if 	    (OPCODE_FIELD(encodedInstr) == OPCODE_U_LUI) LUI_INSTR
+	if (encodedInstr == 32'hFFFFFFFF) INV_INSTR
+	elseif 	(OPCODE_FIELD(encodedInstr) == OPCODE_U_LUI) LUI_INSTR
 	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_U_AUIPC) AUIPC_INSTR
 	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_J_JAL) JAL_INSTR
 	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_I_JALR) JALR_INSTR
@@ -92,17 +89,17 @@ macro expr getInstr(unsigned encodedInstr) :=
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_B) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) BGE_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_B) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) BLTU_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_B) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) BGEU_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_B) UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_B) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I_L) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) LB_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I_L) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) LH_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I_L) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) LW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I_L) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) LBU_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I_L) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) LHU_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_I_L) UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_I_L) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_S) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) SB_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_S) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) SH_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_S) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) SW_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_S) UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_S) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) ADDI_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) SLLI_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) SLTI_INSTR
@@ -110,26 +107,26 @@ macro expr getInstr(unsigned encodedInstr) :=
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) XORI_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000000)) SRLI_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000020)) SRAI_INSTR
-	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) UNKNOWN_INSTR
+	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) ORI_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_I) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) ANDI_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_I) UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_I) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000)) ADD_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000020)) SUB_INSTR
-	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) UNKNOWN_INSTR
+	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000000)) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) SLL_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000002)) SLT_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000003)) SLTU_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000004)) XOR_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000000)) SRL_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000005) && ((encodedInstr >> 25)[6:0] == 32'h00000020)) SRA_INSTR
-	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) UNKNOWN_INSTR
+	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000005)) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000006)) OR_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_R) && ((encodedInstr >> 12)[2:0] == 32'h00000007)) AND_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_R) UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_R) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_MEM) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr & 32'hF00F8F80) == 32'h00000000)) FENCE_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_MEM) && ((encodedInstr >> 12)[2:0] == 32'h00000001) && ((encodedInstr & 32'hFFFF8F80) == 32'h00000000)) FENCEI_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_MEM) UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_MEM) UNKNW_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_SYS) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000) && ((encodedInstr >> 20)[4:0] == 32'h00000000) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) ECALL_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_SYS) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000000) && ((encodedInstr >> 20)[4:0] == 32'h00000001) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) EBREAK_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_SYS) && ((encodedInstr >> 12)[2:0] == 32'h00000001)) CSRRW_INSTR
@@ -143,8 +140,8 @@ macro expr getInstr(unsigned encodedInstr) :=
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_SYS) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000018) && ((encodedInstr >> 20)[4:0] == 32'h00000002) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) MRET_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_SYS) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000008) && ((encodedInstr >> 20)[4:0] == 32'h00000005) && ((encodedInstr >> 32'h0000000F)[4:0] == 32'h00000000) && ((encodedInstr >> 7)[4:0] == 32'h00000000)) WFI_INSTR
 	elseif ((OPCODE_FIELD(encodedInstr) == OPCODE_SYS) && ((encodedInstr >> 12)[2:0] == 32'h00000000) && ((encodedInstr >> 25)[6:0] == 32'h00000009) && ((encodedInstr >>  7)[4:0] == 32'h00000000)) SFENCEVMA_INSTR
-	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_SYS) UNKNOWN_INSTR
-	else UNKNOWN_INSTR
+	elseif  (OPCODE_FIELD(encodedInstr) == OPCODE_SYS) UNKNW_INSTR
+	else UNKNW_INSTR
 	endif
 end macro; 
 
