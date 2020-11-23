@@ -1191,7 +1191,6 @@ prove:
 	at t3_PF_rx_n: mg_tn_PF_rx(3);
 
 	at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
-	// at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
 	at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_instr == at_t3_PF_tx_instr endif;
 	at t3_ID_tx_f: if (at_t3_ID_tx_exist) m_ID_instr == at_t3_IF_tx_instr endif;
 	at t3_EX_tx_f: if (at_t3_EX_tx_exist) m_EX_instr == at_t3_ID_tx_instr endif;
