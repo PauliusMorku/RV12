@@ -152,7 +152,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property base;
-dependencies: c_no_reset, c_no_debug, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple, c_32bit_instr_only;
 for timepoints:
 	t1_PF_rx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(1),
 
@@ -290,7 +290,7 @@ assume:
 
 prove:
 	at t1_PF_rx_f: mg_tn_PF_rx(1);
-	at t1_flush_f: mg_tn_flush(1) == false;
+	//at t1_flush_f: mg_tn_flush(1) == false;
 
 	at t1_PF_tx_f: if (at_t1_PF_tx_exist) m_PF_instr == ((prev(if_parcel) != INSTR_WFI) ? prev(if_parcel) : INSTR_NOP) endif;
 	at t1_IF_tx_f: if (at_t1_IF_tx_exist) m_IF_instr == at_t1_PF_tx_instr endif;
@@ -845,7 +845,7 @@ end property;
 macro unsigned v_examination_window_f1 := 30 end macro;
 
 property step_f1;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple, c_32bit_instr_only;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
@@ -1112,7 +1112,11 @@ assume:
 	at t2_flush_f: mg_tn_flush(2) == true;
 	at t3_flush_f: mg_tn_flush(3) == false;
 
-	at t: at_t3_PF_tx_exist == false;
+	//at t: at_t3_PF_tx_exist == false;
+	//within[t,t+5]: m_IF_tx && !m_ID_rx;
+
+	//at t2_IF_tx_f: !m_ID_rx;
+	//at t2_IF_tx_f: at_t2_IF_tx_exist;
 
 	// Configure token counters
 	at t: PF_wcnt == 0;
@@ -1186,15 +1190,15 @@ prove:
 	// Prove right hook
 	at t3_PF_rx_n: mg_tn_PF_rx(3);
 
-	//at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
-	at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
+	at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
+	// at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
 	at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_instr == at_t3_PF_tx_instr endif;
 	at t3_ID_tx_f: if (at_t3_ID_tx_exist) m_ID_instr == at_t3_IF_tx_instr endif;
 	at t3_EX_tx_f: if (at_t3_EX_tx_exist) m_EX_instr == at_t3_ID_tx_instr endif;
 	at t3_ME_tx_f: if (at_t3_ME_tx_exist) m_ME_instr == at_t3_EX_tx_instr endif;
 	at t3_WB_tx_f: if (at_t3_WB_tx_exist) m_WB_instr == at_t3_ME_tx_instr endif;
 
-	//at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_pc == at_t3_PF_port_pc endif;
+	at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_pc == at_t3_PF_port_pc endif;
 	at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_pc == at_t3_PF_tx_pc endif;
 	at t3_ID_tx_f: if (at_t3_ID_tx_exist) m_ID_pc == at_t3_IF_tx_pc endif;
 	at t3_EX_tx_f: if (at_t3_EX_tx_exist) m_EX_pc == at_t3_ID_tx_pc endif;
