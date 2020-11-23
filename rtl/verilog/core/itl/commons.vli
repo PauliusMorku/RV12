@@ -32,8 +32,8 @@ macro unsigned INSTR_WFI := 32'h10500073 end macro;
 macro unsigned INSTR_ILLEGAL := 32'hFFFFFFFF end macro;
 
 
-macro logic m_PF_rx := (((c/if_unit/pd_bubble == 0) /*&& (c/if_unit/if_stall == 0)*/) || prev(m_rst)) end macro;
-macro logic m_PF_tx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/pd_instr != INSTR_ILLEGAL) /*&& (c/if_unit/if_stall == 0)*/) end macro;
+macro logic m_PF_rx := (((c/if_unit/pd_bubble == 0) && (c/if_unit/if_stall == 0)) || prev(m_rst)) end macro;
+macro logic m_PF_tx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/pd_instr != INSTR_ILLEGAL) && (c/if_unit/if_stall == 0)) end macro;
 
 macro logic m_IF_rx := ((c/if_unit/pd_bubble == 0) && (c/if_unit/pd_instr != INSTR_ILLEGAL) && (c/if_unit/id_stall == 0)) end macro;
 macro logic m_IF_tx := ((c/if_unit/if_bubble == 0) && (c/if_unit/if_instr != INSTR_ILLEGAL) && (c/if_unit/id_stall == 0)) end macro;

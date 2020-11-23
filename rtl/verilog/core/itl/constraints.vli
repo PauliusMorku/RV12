@@ -199,6 +199,12 @@ constraint c_dmem_ready :=
 	endif;
 end constraint;
 
+constraint c_32bit_instr_only :=
+	if (!m_rst)
+		(&if_parcel[1:0] == 1);
+	endif;
+end constraint;
+
 constraint c_no_exception :=
 	if (!m_rst)
 		(c/if_exception == 0) &&
