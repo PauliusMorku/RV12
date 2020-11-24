@@ -732,6 +732,8 @@ assume:
 	//at t: at_t2_PF_tx_exist == false;
 	//at t: at_t2_PF_port_instr == INSTR_ILLEGAL;
 
+	//at t2_ID_tx_f: ((at_t2_ID_tx_exist) && (getInstr(at_t2_PF_tx_instr) == JAL_INSTR));
+
 	// Configure token counters
 	at t: PF_wcnt == 0;
 	at t: IF_wcnt == 0;
@@ -809,10 +811,10 @@ prove:
 	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_pc == at_t2_EX_tx_pc endif;
 	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_pc == at_t2_ME_tx_pc endif;
 
-	// at t2_ID_tx_f: if (getInstr(at_t2_PF_tx_instr) == JAL_INSTR)
-	// 		(m_ID_bu_nxt_pc == (at_t2_PF_tx_pc + getImmediate(at_t2_PF_tx_instr))[31:0]) &&
-	// 		(m_ID_bu_flush == true)
-	// 	endif;
+	at t2_ID_tx_f: if ((at_t2_ID_tx_exist) && (getInstr(at_t2_PF_tx_instr) == JAL_INSTR))
+			(m_ID_bu_nxt_pc == (at_t2_PF_tx_pc + getImmediate(at_t2_PF_tx_instr))[31:0]) &&
+			(m_ID_bu_flush == true)
+		endif;
 
 	//at tl_ID_tx_f: at_t2_IF_tx_pc == m_ID_bu_nxt_pc;// fails because of pc fetching from memory
 
