@@ -3,6 +3,10 @@ constraint c_no_reset :=
 	!m_rst;
 end constraint;
 
+constraint c_reset_overlap :=
+	!rose(m_rst);
+end constraint;
+
 constraint c_no_debug :=
 	if (!m_rst)
 		c/dbg_stall == 0 &&
@@ -10,6 +14,17 @@ constraint c_no_debug :=
 		c/du_stall == 0 &&
 		c/du_stall_dly == 0 &&
 		c/du_we_pc == 0;
+	endif;
+end constraint;
+
+constraint c_rst_no_inc :=
+	if (m_rst)
+		PF_wcnt_inc == 0 &&
+		IF_wcnt_inc == 0 &&
+		ID_wcnt_inc == 0 &&
+		EX_wcnt_inc == 0 &&
+		ME_wcnt_inc == 0 &&
+		WB_wcnt_inc == 0;
 	endif;
 end constraint;
 

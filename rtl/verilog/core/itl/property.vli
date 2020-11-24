@@ -19,7 +19,7 @@ im	dm	ew
 */
 macro unsigned v_imem_slack := 1 end macro;
 macro unsigned v_dmem_slack := 1 end macro;
-macro unsigned v_examination_window := 30 end macro;
+macro unsigned v_examination_window := 19 end macro;
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +35,7 @@ Y88b 888 d88P 888 888  888 Y88b 888 Y88..88P Y88b 888 d88P          Y88b.    888
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property window_check;
-dependencies: c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 
 for timepoints:
 	t2_PF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_tx(2),
@@ -121,9 +121,6 @@ assume:
 	during[t,t+v_examination_window]: ME_trem == m_ME_tx;
 	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
 
-	// Configure reset overlap
-	during[t,t+v_examination_window]: !rose(m_rst); // Once the reset is released it can not be triggered again
-
 	// For debugging
 	during[t,t+v_examination_window]: IN_instr_enum == getInstr(if_parcel);
 	during[t,t+v_examination_window]: PF_instr_enum == getInstr(m_PF_instr);
@@ -134,7 +131,7 @@ assume:
 	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
 
 prove:
-	within[t,t+v_examination_window]: mg_tn_PF_rx(1);
+	within[t,t+v_examination_window]: (mg_tn_PF_rx(1) || fell(m_rst));
 
 end property;
 
@@ -152,7 +149,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property base;
-dependencies: c_no_reset, c_no_debug, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple, c_32bit_instr_only;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 for timepoints:
 	t1_PF_rx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(1),
 
@@ -290,7 +287,7 @@ assume:
 
 prove:
 	at t1_PF_rx_f: mg_tn_PF_rx(1);
-	//at t1_flush_f: mg_tn_flush(1) == false;
+	at t1_flush_f: mg_tn_flush(1) == false;
 
 	at t1_PF_tx_f: if (at_t1_PF_tx_exist) m_PF_instr == ((prev(if_parcel) != INSTR_WFI) ? prev(if_parcel) : INSTR_NOP) endif;
 	at t1_IF_tx_f: if (at_t1_IF_tx_exist) m_IF_instr == at_t1_PF_tx_instr endif;
@@ -323,7 +320,7 @@ d88P"  888                   888                        888                     
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property flush_check;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 for timepoints:
 	t1_PF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(1),
 	t2_PF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(2),
@@ -422,7 +419,7 @@ end property;
 
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 property sanity;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 for timepoints:
 	// t1 detection
 	t1_PF_rx_n = t,
@@ -542,7 +539,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property step;
-dependencies: c_no_reset, c_no_debug, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple, c_32bit_instr_only;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
@@ -845,7 +842,7 @@ end property;
 macro unsigned v_examination_window_f1 := 30 end macro;
 
 property step_f1;
-dependencies: c_no_reset, c_no_debug, c_no_exception, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple, c_32bit_instr_only;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
