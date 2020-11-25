@@ -17,9 +17,16 @@ im	dm	ew
 2	1	20
 2	2	22
 */
+
+// macro unsigned v_imem_slack := 2 end macro;
+// macro unsigned v_dmem_slack := 2 end macro;
+// macro unsigned v_examination_window := 26 end macro;
+// macro unsigned v_examination_window_f1 := 30 end macro;
+
 macro unsigned v_imem_slack := 1 end macro;
 macro unsigned v_dmem_slack := 1 end macro;
-macro unsigned v_examination_window := 19 end macro;
+macro unsigned v_examination_window := 20 end macro;
+macro unsigned v_examination_window_f1 := 25 end macro;
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -474,11 +481,33 @@ assume:
 	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
 	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
 
+	during[t,t+v_examination_window]: PF_trem == m_PF_tx;
+	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
+	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
+	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
+	during[t,t+v_examination_window]: ME_trem == m_ME_tx;
+	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
+
 prove:
 	// Prove right hook
 	at t2_PF_rx_n: mg_tn_PF_rx(2);
 
-	// Sanity checks
+	// Same token is never transmited twice
+	during[t,t+v_examination_window]: !(mg_tn_PF_tx(1) && (PF_tcnt == 0));
+	during[t,t+v_examination_window]: !(mg_tn_IF_tx(1) && (IF_tcnt == 0));
+	during[t,t+v_examination_window]: !(mg_tn_ID_tx(1) && (ID_tcnt == 0));
+	during[t,t+v_examination_window]: !(mg_tn_EX_tx(1) && (EX_tcnt == 0));
+	during[t,t+v_examination_window]: !(mg_tn_ME_tx(1) && (ME_tcnt == 0));
+	during[t,t+v_examination_window]: !(mg_tn_WB_tx(1) && (WB_tcnt == 0));
+
+	// Same token is never at two stages at the same time
+	during[t,t+v_examination_window]: if (PF_tcnt != 0) PF_tcnt != IF_tcnt endif;
+	during[t,t+v_examination_window]: if (IF_tcnt != 0) IF_tcnt != ID_tcnt endif;
+	during[t,t+v_examination_window]: if (ID_tcnt != 0) ID_tcnt != EX_tcnt endif;
+	during[t,t+v_examination_window]: if (EX_tcnt != 0) EX_tcnt != ME_tcnt endif;
+	during[t,t+v_examination_window]: if (ME_tcnt != 0) ME_tcnt != WB_tcnt endif;
+
+	// Each transaction of a token exists only if a previous transaction exists
 	at t: if (at_t1_IF_rx_exist) at_t1_PF_tx_exist endif;
 	at t: if (at_t1_IF_tx_exist) at_t1_IF_rx_exist endif;
 	at t: if (at_t1_ID_rx_exist) at_t1_IF_tx_exist endif;
@@ -490,17 +519,18 @@ prove:
 	at t: if (at_t1_WB_rx_exist) at_t1_ME_tx_exist endif;
 	at t: if (at_t1_WB_tx_exist) at_t1_WB_rx_exist endif;
 
-	at t1_PF_tx_f: if (at_t1_PF_tx_exist) mg_tn_PF_tx(1) endif;
-	at t1_IF_rx_f: if (at_t1_IF_rx_exist) mg_tn_IF_rx(1) endif;
-	at t1_IF_tx_f: if (at_t1_IF_tx_exist) mg_tn_IF_tx(1) endif;
-	at t1_ID_rx_f: if (at_t1_ID_rx_exist) mg_tn_ID_rx(1) endif;
-	at t1_ID_tx_f: if (at_t1_ID_tx_exist) mg_tn_ID_tx(1) endif;
-	at t1_EX_rx_f: if (at_t1_EX_rx_exist) mg_tn_EX_rx(1) endif;
-	at t1_EX_tx_f: if (at_t1_EX_tx_exist) mg_tn_EX_tx(1) endif;
-	at t1_ME_rx_f: if (at_t1_ME_rx_exist) mg_tn_ME_rx(1) endif;
-	at t1_ME_tx_f: if (at_t1_ME_tx_exist) mg_tn_ME_tx(1) endif;
-	at t1_WB_rx_f: if (at_t1_WB_rx_exist) mg_tn_WB_rx(1) endif;
-	at t1_WB_tx_f: if (at_t1_WB_tx_exist) mg_tn_WB_tx(1) endif;
+	// Verifying that each transaction actually exists
+	// at t1_PF_tx_f: if (at_t1_PF_tx_exist) mg_tn_PF_tx(1) endif;
+	// at t1_IF_rx_f: if (at_t1_IF_rx_exist) mg_tn_IF_rx(1) endif;
+	// at t1_IF_tx_f: if (at_t1_IF_tx_exist) mg_tn_IF_tx(1) endif;
+	// at t1_ID_rx_f: if (at_t1_ID_rx_exist) mg_tn_ID_rx(1) endif;
+	// at t1_ID_tx_f: if (at_t1_ID_tx_exist) mg_tn_ID_tx(1) endif;
+	// at t1_EX_rx_f: if (at_t1_EX_rx_exist) mg_tn_EX_rx(1) endif;
+	// at t1_EX_tx_f: if (at_t1_EX_tx_exist) mg_tn_EX_tx(1) endif;
+	// at t1_ME_rx_f: if (at_t1_ME_rx_exist) mg_tn_ME_rx(1) endif;
+	// at t1_ME_tx_f: if (at_t1_ME_tx_exist) mg_tn_ME_tx(1) endif;
+	// at t1_WB_rx_f: if (at_t1_WB_rx_exist) mg_tn_WB_rx(1) endif;
+	// at t1_WB_tx_f: if (at_t1_WB_tx_exist) mg_tn_WB_tx(1) endif;
 
 end property;
 
@@ -838,8 +868,6 @@ Y88b 888 d88P 888 888  888 Y88b 888 Y88..88P Y88b 888 d88P          Y88b.    888
  "Y8888888P"  888 888  888  "Y88888  "Y88P"   "Y8888888P"  88888888  "Y8888P 888  888  "Y8888   "Y8888P 888  888 88888888 888    8888888 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-macro unsigned v_examination_window_f1 := 25 end macro;
 
 property window_check_f1;
 dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
