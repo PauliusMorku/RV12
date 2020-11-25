@@ -740,6 +740,8 @@ freeze:
 	at_t2_ME_tx_pc = m_ME_pc@t2_ME_tx_f,
 	at_t2_WB_tx_pc = m_WB_pc@t2_WB_tx_f,
 
+	at_tl_WB_tx_reg_01 = m_WB_reg_01@tl_WB_tx_l,
+
 	at_t2_PF_port_instr = m_PF_port_instr@t2_PF_port_rx,
 	at_t2_PF_port_pc = m_PF_port_pc@t2_PF_port_rx,
 
@@ -787,29 +789,29 @@ assume:
 	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
 
 	// Configure transaction flag variables
-	mg_flag_define(tl_PF_tx_wait, at_tl_PF_tx_exist, v_examination_window, tl_PF_tx_f);
-	mg_flag_define(tl_IF_rx_wait, at_tl_IF_rx_exist, v_examination_window, tl_IF_rx_f);
-	mg_flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window, tl_IF_tx_f);
-	mg_flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window, tl_ID_rx_f);
-	mg_flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window, tl_ID_tx_f);
-	mg_flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window, tl_EX_rx_f);
-	mg_flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window, tl_EX_tx_f);
-	mg_flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window, tl_ME_rx_f);
-	mg_flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window, tl_ME_tx_f);
-	mg_flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window, tl_WB_rx_f);
-	mg_flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window, tl_WB_tx_f);
+	mg_flag_define(tl_PF_tx_wait, at_tl_PF_tx_exist, v_examination_window, tl_PF_tx_f, t);
+	mg_flag_define(tl_IF_rx_wait, at_tl_IF_rx_exist, v_examination_window, tl_IF_rx_f, tl_PF_tx_l);
+	mg_flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window, tl_IF_tx_f, tl_IF_rx_l);
+	mg_flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window, tl_ID_rx_f, tl_IF_tx_l);
+	mg_flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window, tl_ID_tx_f, tl_ID_rx_l);
+	mg_flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window, tl_EX_rx_f, tl_ID_tx_l);
+	mg_flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window, tl_EX_tx_f, tl_EX_rx_l);
+	mg_flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window, tl_ME_rx_f, tl_EX_tx_l);
+	mg_flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window, tl_ME_tx_f, tl_ME_rx_l);
+	mg_flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window, tl_WB_rx_f, tl_ME_tx_l);
+	mg_flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window, tl_WB_tx_f, tl_WB_rx_l);
 
-	mg_flag_define(t2_PF_tx_wait, at_t2_PF_tx_exist, v_examination_window, t2_PF_tx_f);
-	mg_flag_define(t2_IF_rx_wait, at_t2_IF_rx_exist, v_examination_window, t2_IF_rx_f);
-	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f);
-	mg_flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window, t2_ID_rx_f);
-	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f);
-	mg_flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window, t2_EX_rx_f);
-	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f);
-	mg_flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window, t2_ME_rx_f);
-	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f);
-	mg_flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window, t2_WB_rx_f);
-	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f);	
+	mg_flag_define(t2_PF_tx_wait, at_t2_PF_tx_exist, v_examination_window, t2_PF_tx_f, t);
+	mg_flag_define(t2_IF_rx_wait, at_t2_IF_rx_exist, v_examination_window, t2_IF_rx_f, t);
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f, t);
+	mg_flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window, t2_ID_rx_f, t);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f, t);
+	mg_flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window, t2_EX_rx_f, t);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f, t);
+	mg_flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window, t2_ME_rx_f, t);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f, t);
+	mg_flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window, t2_WB_rx_f, t);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f, t);	
 
 	// For debugging
 	during[t,t+v_examination_window]: IN_instr_enum == getInstr(if_parcel);
@@ -824,34 +826,39 @@ assume:
 
 prove:
 	// Prove right hook
-	at t2_PF_rx_n: mg_tn_PF_rx(2);
-	// at t2_PF_tx_f: if (at_t2_PF_tx_exist) (c/if_unit/active_parcel == at_t2_PF_port_instr) endif;
-	// at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_instr == ((c/if_unit/active_parcel != INSTR_WFI) ? c/if_unit/active_parcel : INSTR_NOP) endif;
-	at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_instr == ((at_t2_PF_port_instr != INSTR_WFI) ? at_t2_PF_port_instr : INSTR_NOP) endif;
-	at t2_IF_tx_f: if (at_t2_IF_tx_exist) m_IF_instr == at_t2_PF_tx_instr endif;
-	at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_instr == at_t2_IF_tx_instr endif;
-	at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_instr == at_t2_ID_tx_instr endif;
-	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_instr == at_t2_EX_tx_instr endif;
-	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_instr == at_t2_ME_tx_instr endif;
+	// at t2_PF_rx_n: mg_tn_PF_rx(2);
+	// at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_instr == ((at_t2_PF_port_instr != INSTR_WFI) ? at_t2_PF_port_instr : INSTR_NOP) endif;
+	// at t2_IF_tx_f: if (at_t2_IF_tx_exist) m_IF_instr == at_t2_PF_tx_instr endif;
+	// at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_instr == at_t2_IF_tx_instr endif;
+	// at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_instr == at_t2_ID_tx_instr endif;
+	// at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_instr == at_t2_EX_tx_instr endif;
+	// at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_instr == at_t2_ME_tx_instr endif;
 
-	at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_pc == at_t2_PF_port_pc endif;
-	at t2_IF_tx_f: if (at_t2_IF_tx_exist) m_IF_pc == at_t2_PF_tx_pc endif;
-	at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_pc == at_t2_IF_tx_pc endif;
-	at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_pc == at_t2_ID_tx_pc endif;
-	at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_pc == at_t2_EX_tx_pc endif;
-	at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_pc == at_t2_ME_tx_pc endif;
+	// at t2_PF_tx_f: if (at_t2_PF_tx_exist) m_PF_pc == at_t2_PF_port_pc endif;
+	// at t2_IF_tx_f: if (at_t2_IF_tx_exist) m_IF_pc == at_t2_PF_tx_pc endif;
+	// at t2_ID_tx_f: if (at_t2_ID_tx_exist) m_ID_pc == at_t2_IF_tx_pc endif;
+	// at t2_EX_tx_f: if (at_t2_EX_tx_exist) m_EX_pc == at_t2_ID_tx_pc endif;
+	// at t2_ME_tx_f: if (at_t2_ME_tx_exist) m_ME_pc == at_t2_EX_tx_pc endif;
+	// at t2_WB_tx_f: if (at_t2_WB_tx_exist) m_WB_pc == at_t2_ME_tx_pc endif;
 
-	at t2_ID_tx_f: if ((at_t2_ID_tx_exist) && (getInstr(at_t2_PF_tx_instr) == JAL_INSTR))
-			(m_ID_bu_nxt_pc == (at_t2_PF_tx_pc + getImmediate(at_t2_PF_tx_instr))[31:0]) &&
-			(m_ID_bu_flush == true)
+	// at t2_ID_tx_f: if ((at_t2_ID_tx_exist) && (getInstr(at_t2_PF_tx_instr) == JAL_INSTR))
+	// 		(m_ID_bu_nxt_pc == (at_t2_PF_tx_pc + getImmediate(at_t2_PF_tx_instr))[31:0]) &&
+	// 		(m_ID_bu_flush == true)
+	// 	endif;
+
+
+	at t2_WB_tx_f: if (at_t2_WB_tx_exist)
+			if (RD_FIELD(at_t2_PF_port_instr) != 1)
+				m_WB_reg_01 == at_tl_WB_tx_reg_01;
+			endif;
 		endif;
+
 
 	//at tl_ID_tx_f: at_t2_IF_tx_pc == m_ID_bu_nxt_pc;// fails because of pc fetching from memory
 
 	// at tl_ID_tx_f: if (getInstr(m_ID_instr) == JAL_INSTR)
 	// 		(at_t2_IF_tx_pc == m_ID_bu_nxt_pc)
 	// 	endif;
-
 
 end property;
 
