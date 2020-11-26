@@ -569,7 +569,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property step;
-dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_complex, c_exception_config;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
@@ -744,6 +744,11 @@ assume:
 
 	//at t: at_t2_PF_tx_exist == false;
 	//at t: at_t2_PF_port_instr == INSTR_ILLEGAL;
+	at t: (getInstr(at_t2_PF_port_instr) != UNKNW_INSTR);
+	at t: (getInstr(at_t2_PF_port_instr) != SRAI_INSTR);
+	at t: (getInstr(at_t2_PF_port_instr) != XORI_INSTR);
+	at t: (getInstr(at_t2_PF_port_instr) == ADDI_INSTR);
+	at t: (RD_FIELD(at_t2_PF_port_instr) == 1);
 
 	//at t2_ID_tx_f: ((at_t2_ID_tx_exist) && (getInstr(at_t2_PF_tx_instr) == JAL_INSTR));
 
@@ -828,28 +833,52 @@ prove:
 	// 	endif;
 
 
-	during[t2_WB_wn_l,t2_WB_wn_r]:
-		if (!at_t2_WB_tx_exist)
-			m_WB_reg_01 == at_tl_WB_tx_reg_01;
+	// during[t2_WB_wn_l,t2_WB_wn_r]:
+	// 	if (!at_t2_WB_tx_exist)
+	// 		m_WB_reg_01 == at_tl_WB_tx_reg_01;
+	// 	endif;
+
+	// during[t2_WB_wn_l,t2_WB_tx_f-1]:
+	// 	if (at_t2_WB_tx_exist)
+	// 		m_WB_reg_01 == at_tl_WB_tx_reg_01;
+	// 	endif;
+
+	// during[t2_WB_tx_f,t2_WB_wn_r]: 
+	// 	if (at_t2_WB_tx_exist)
+	// 		if (RD_FIELD(at_t2_PF_port_instr) == 1)
+	//             if (getOpcode(at_t2_PF_port_instr) == OPCODE_R)
+	//                 m_WB_reg_01 == at_t2_EX_tx_ex_r;
+	//             elseif (getOpcode(at_t2_PF_port_instr) == OPCODE_I)
+	//                 m_WB_reg_01 == at_t2_EX_tx_ex_r;
+	//             endif;
+	// 		else
+	//  			m_WB_reg_01 == at_tl_WB_tx_reg_01;
+	//  		endif;
+	// 	endif;
+
+
+	// during[t2_PF_wn_l,t2_PF_port_rx-1]: !mg_tn_PF_port_rx(2);
+	// during[t2_PF_port_rx+1,t2_PF_wn_r]: !mg_tn_PF_port_rx(2);
+
+
+	// at t2_EX_tx_f:
+	// 	if (at_t2_EX_tx_exist)
+	// 		if (RS1_FIELD(at_t2_PF_port_instr) == 0)
+	// 		    if ((getOpcode(at_t2_PF_port_instr) == OPCODE_I))
+	// 		    	at_t2_EX_tx_ex_r == getALUResult(getALUFunc(getInstr(at_t2_PF_port_instr)), 0, getImmediate(at_t2_PF_port_instr));
+	// 		    endif;
+	// 		endif;
+	// 	endif;
+
+	at t2_EX_tx_f:
+		if (at_t2_EX_tx_exist)
+			if (RS1_FIELD(at_t2_PF_port_instr) == 1)
+			    if ((getOpcode(at_t2_PF_port_instr) == OPCODE_I))
+			    	c/ex_r == getALUResult(getALUFunc(getInstr(at_t2_PF_port_instr)), at_tl_WB_tx_reg_01, getImmediate(at_t2_PF_port_instr));
+			    endif;
+			endif;
 		endif;
 
-	during[t2_WB_wn_l,t2_WB_tx_f-1]:
-		if (at_t2_WB_tx_exist)
-			m_WB_reg_01 == at_tl_WB_tx_reg_01;
-		endif;
-
-	during[t2_WB_tx_f,t2_WB_wn_r]: 
-		if (at_t2_WB_tx_exist)
-			if (RD_FIELD(at_t2_PF_port_instr) == 1)
-	            if (getOpcode(at_t2_PF_port_instr) == OPCODE_R)
-	                m_WB_reg_01 == at_t2_EX_tx_ex_r;
-	            elseif (getOpcode(at_t2_PF_port_instr) == OPCODE_I)
-	                m_WB_reg_01 == at_t2_EX_tx_ex_r;
-	            endif;
-    		else
-	 			m_WB_reg_01 == at_tl_WB_tx_reg_01;
-	 		endif;
- 		endif;
 
 	//at tl_ID_tx_f: at_t2_IF_tx_pc == m_ID_bu_nxt_pc;// fails because of pc fetching from memory
 

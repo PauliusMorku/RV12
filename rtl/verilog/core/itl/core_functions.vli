@@ -146,8 +146,8 @@ macro expr getInstr(unsigned encodedInstr) :=
 end macro; 
 
 
-/*
-macro ALUFunc_t getALUFunc(Instr_t instr) := 
+
+macro expr getALUFunc(expr instr) := 
 	if ((instr == ADD_INSTR) || (instr == ADDI_INSTR)) ALUF_ADD
 	elseif (instr == SUB_INSTR) ALUF_SUB
 	elseif ((instr == SLL_INSTR) || (instr == SLLI_INSTR)) ALUF_SLL
@@ -170,19 +170,56 @@ macro ALUFunc_t getALUFunc(Instr_t instr) :=
 	endif
 end macro;
 
-macro unsigned getALUResult(ALUFunc_t func; unsigned op1; unsigned op2) := 
+macro unsigned getALUResult(expr func; unsigned op1; unsigned op2) := 
 	if (func == ALUF_ADD) 										(op1 + op2)[31:0]
-	elseif (func == ALUF_SUB) 									(op1 - op2)[31:0]
+	elseif (func == ALUF_SUB) 									unsigned((op1 - op2)[31:0])
 	elseif (func == ALUF_AND) 									(op1 & op2)
 	elseif (func == ALUF_OR) 									(op1 | op2)
 	elseif (func == ALUF_XOR) 									(op1 ^ op2)
-	elseif ((func == ALUF_SLT) && (signed(op1) < signed(op2))) 	1
-	elseif ((func == ALUF_SLTU) && (op1 < op2)) 				1
+	elseif (func == ALUF_SLT)
+		if (signed(op1) < signed(op2)) 							1
+		else 													0
+		endif;
+	elseif (func == ALUF_SLTU)
+		if ((op1 < op2)) 										1
+		else 													0
+		endif;
 	elseif (func == ALUF_SLL) 									(op1 << op2[4:0])
-	elseif (func == ALUF_SRA) 									(signed(op1) >> signed(op2[4:0]))
+	elseif (func == ALUF_SRA) 									unsigned(signed(op1) >> signed(op2[4:0]))
 	elseif (func == ALUF_SRL) 									(op1 >> op2[4:0])
 	elseif (func == ALUF_COPY1) 								op1
 	else 														0
 	endif
 end macro;
-*/
+
+// unsigned int ISA::getBranchResult(unsigned int encodedInstr, unsigned int ALUResult, unsigned int PCReg) const {
+//     if (getInstr(encodedInstr) == INSTR_BEQ && ALUResult == 0) {
+//         return PCReg + getImmediate(encodedInstr);
+//     } else if (getInstr(encodedInstr) == INSTR_BNE && ALUResult != 0) {
+//         return PCReg + getImmediate(encodedInstr);
+//     } else if (getInstr(encodedInstr) == INSTR_BLT && ALUResult == 1) {
+//         return PCReg + getImmediate(encodedInstr);
+//     } else if (getInstr(encodedInstr) == INSTR_BGE && ALUResult == 0) {
+//         return PCReg + getImmediate(encodedInstr);
+//     } else if (getInstr(encodedInstr) == INSTR_BLTU && ALUResult == 1) {
+//         return PCReg + getImmediate(encodedInstr);
+//     } else if (getInstr(encodedInstr) == INSTR_BGEU && ALUResult == 0) {
+//         return PCReg + getImmediate(encodedInstr);
+//     } else {
+//         return PCReg + 4;
+//     }
+// }
+
+// ME_MaskType ISA::getMemoryMask(Instr_t instr) const {
+//     if (instr == INSTR_LW || instr == INSTR_SW) {
+//         return MT_W;
+//     } else if (instr == INSTR_LH || instr == INSTR_SH) {
+//         return MT_H;
+//     } else if (instr == INSTR_LB || instr == INSTR_SB) {
+//         return MT_B;
+//     } else if (instr == INSTR_LHU) {
+//         return MT_HU;
+//     } else if (instr == INSTR_LBU) {
+//         return MT_BU;
+//     } else return MT_X;
+// }

@@ -135,7 +135,11 @@ constraint c_dmem_response_simple :=
 		end exists;
 	else
 		dmem_ack == 0
-	endif;
+	endif &&
+
+	(dmem_err == 0) &&
+	(dmem_misaligned == 0) &&
+	(dmem_page_fault == 0);
 end constraint;
 
 constraint c_dmem_response_complex :=
@@ -174,8 +178,8 @@ constraint c_dmem_response_complex :=
     	dmem_ack == 0
 	endif &&
    (dmem_err == 0) &&
-   (dmem_misaligned == 0) &&
-   (dmem_page_fault == 0);
+   (dmem_misaligned == 0)/* &&
+   (dmem_page_fault == 0)*/;
 end constraint;
 
 constraint c_no_bu_flush :=
@@ -228,6 +232,34 @@ constraint c_no_exception :=
 		(c/mem_exception == 0) &&
 		(c/wb_exception == 0) &&
 		(c/du_exceptions == 32'h00000000);
+	endif;
+end constraint;
+
+  // CAUSE_MISALIGNED_INSTRUCTION   = 0,
+  // CAUSE_INSTRUCTION_ACCESS_FAULT = 1,
+  // CAUSE_ILLEGAL_INSTRUCTION      = 2,
+  // CAUSE_BREAKPOINT               = 3,
+  // CAUSE_MISALIGNED_LOAD          = 4,
+  // CAUSE_LOAD_ACCESS_FAULT        = 5,
+  // CAUSE_MISALIGNED_STORE         = 6,
+  // CAUSE_STORE_ACCESS_FAULT       = 7,
+  // CAUSE_UMODE_ECALL              = 8,
+  // CAUSE_SMODE_ECALL              = 9,
+  // CAUSE_HMODE_ECALL              = 10,
+  // CAUSE_MMODE_ECALL              = 11,
+  // CAUSE_INSTRUCTION_PAGE_FAULT   = 12,
+  // CAUSE_LOAD_PAGE_FAULT          = 13,
+  // CAUSE_STORE_PAGE_FAULT         = 15;
+
+macro unsigned EXCEPTION_MASK := 16'b0000000000000100 end macro;
+
+constraint c_exception_config :=
+	if (!m_rst)
+		((c/if_exception & EXCEPTION_MASK) == 0) &&
+		((c/id_exception & EXCEPTION_MASK) == 0) &&
+		((c/ex_exception & EXCEPTION_MASK) == 0) &&
+		((c/mem_exception & EXCEPTION_MASK) == 0) &&
+		((c/wb_exception & EXCEPTION_MASK) == 0);
 	endif;
 end constraint;
 
