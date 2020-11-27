@@ -184,8 +184,8 @@ macro unsigned getALUResult(expr func; unsigned op1; unsigned op2) :=
 		if ((op1 < op2)) 										1
 		else 													0
 		endif;
-	elseif (func == ALUF_SLL) 									(op1 << op2[4:0])
-	elseif (func == ALUF_SRA) 									unsigned(signed(op1) >> signed(op2[4:0]))
+	elseif (func == ALUF_SLL) 									(op1 << op2[4:0])[31:0]
+	elseif (func == ALUF_SRA) 									unsigned((signed(op1[31:0]) >> op2[4:0])[31:0])
 	elseif (func == ALUF_SRL) 									(op1 >> op2[4:0])
 	elseif (func == ALUF_COPY1) 								op1
 	else 														0
