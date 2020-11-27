@@ -1,3 +1,5 @@
+if {[info exists launch_script_triggered] == 0} {
+
 ################################################################################################
 # OneSpin script directory
 ################################################################################################
@@ -21,32 +23,17 @@ set comment "initial attempt to load RV12"
 set generate_report 1
 
 ################################################################################################
-# Arguments for the property check in OneSpin (can be used to configure engines, etc.)
-################################################################################################
-set check_args "-all"
-
-################################################################################################
-# TCL script files that are executed prior loading the desing in OneSpin
-################################################################################################
-set tcl_config_files {
-}
-
-################################################################################################
-# Filter messages (1 - enable, 0 - disable)
-################################################################################################
-set filter_messages 1
-
-################################################################################################
 # Copy experiment files before running checks (1 - enable, 0 - disable)
 ################################################################################################
-set make_copy 0
+set make_copy 1
 
 ################################################################################################
 # ITL property files, similarly named TCL files will be sourced automatically
 ################################################################################################
-set itl_property_files {
+set itl_files {
 	RV12/rtl/verilog/core/itl/commons.vli
 	RV12/rtl/verilog/core/itl/property.vli
+	RV12/rtl/verilog/core/itl/constraints.vli
 	RV12/rtl/verilog/core/itl/core_functions.vli
 }
 
@@ -81,19 +68,25 @@ set verilog_files {
 }
 
 ################################################################################################
-# Common ITL files
-################################################################################################
-set itl_common_files {
-}
-
-################################################################################################
-# Common signals to be cut
-################################################################################################
-set cut_signals {
-}
-
-################################################################################################
 # Read common variables and launch - do not modify
 ################################################################################################
 set config_file [info script]
-source $ONESPIN_SCRIPT_DIR/launcher.tcl
+# source $ONESPIN_SCRIPT_DIR/launcher.tcl
+source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
+
+} else {
+
+	if {[get_mode]!="setup"} {
+		set_mode setup
+	}
+	delete_design -both
+	read_verilog -golden  -pragma_ignore {}  -version sv2012 $verilog_files_onespin
+	elaborate -golden
+	compile
+	set_reset_sequence rstn=0
+	set_mode mv
+	set_check_option -verbose
+	read_itl $itl_files_onespin
+
+	unset launch_script_triggered
+}
