@@ -178,8 +178,8 @@ constraint c_dmem_response_complex :=
     	dmem_ack == 0
 	endif &&
    (dmem_err == 0) &&
-   (dmem_misaligned == 0)/* &&
-   (dmem_page_fault == 0)*/;
+   (dmem_misaligned == 0) &&
+   (dmem_page_fault == 0);
 end constraint;
 
 constraint c_no_bu_flush :=

@@ -15,7 +15,7 @@ set COMMON_ROOT_DIR $::env(WORKSPACE_DIR)
 ################################################################################################
 # Comment for the experiment (will appear in the OneSpin log files and the generated report)
 ################################################################################################
-set comment "initial attempt to load RV12"
+set comment ""
 
 ################################################################################################
 # Generate report from all experiments in the result directory (1 - enable, 0 - disable)
@@ -75,10 +75,9 @@ set config_file [info script]
 source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
 
 } else {
+	unset launch_script_triggered
 
-	if {[get_mode]!="setup"} {
-		set_mode setup
-	}
+	set_mode setup
 	delete_design -both
 	read_verilog -golden  -pragma_ignore {}  -version sv2012 $verilog_files_onespin
 	elaborate -golden
@@ -88,5 +87,6 @@ source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
 	set_check_option -verbose
 	read_itl $itl_files_onespin
 
-	unset launch_script_triggered
+	check base
+	#check step
 }
