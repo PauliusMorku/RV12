@@ -34,6 +34,23 @@ constraint c_no_st_flush :=
 	endif;
 end constraint;
 
+constraint c_imem_response_unfair :=
+	if (m_rst)
+		(if_parcel_valid == 2'b00)
+	endif &&
+	((if_parcel_valid == 2'b11) || (if_parcel_valid == 2'b00)) &&
+	(if_parcel_misaligned == 0) &&
+	(if_parcel_page_fault == 0) &&
+	(if_stall_nxt_pc == 0) &&
+
+	// Clean the values if the parcel is not valid
+	if (if_parcel_valid != 2'b11)
+		(if_parcel == 32'h00000000) &&
+		(if_parcel_pc == 32'h00000000)
+	endif;
+end constraint;
+
+
 constraint c_imem_response_simple :=
 	if (!m_rst)
 		exists i in 0..v_imem_slack:
@@ -51,81 +68,88 @@ constraint c_imem_response_simple :=
 	if (if_parcel_valid != 2'b11)
 		(if_parcel == 32'h00000000) &&
 		(if_parcel_pc == 32'h00000000)
-	// else
-	// 	(if_parcel == 32'h00000000)
 	endif;
 end constraint;
 
-constraint c_imem_response_complex :=
-	if (!m_rst)
-		if (if_flush == 0)
+// constraint c_imem_response_complex :=
+// 	if (!m_rst)
+// 		if (if_flush == 0)
 
-			// Handle if_stall cases by retaining the values
-			if (next(if_flush) == 0)
-				if (if_stall == 1)
-					(next(if_parcel_pc) == if_parcel_pc) &&
-					(next(if_parcel) == if_parcel) &&
-					(next(if_parcel_valid) == if_parcel_valid)
-				endif
-			endif &&
+// 			// Handle if_stall cases by retaining the values
+// 			if (next(if_flush) == 0)
+// 				if (if_stall == 1)
+// 					(next(if_parcel_pc) == if_parcel_pc) &&
+// 					(next(if_parcel) == if_parcel) &&
+// 					(next(if_parcel_valid) == if_parcel_valid)
+// 				endif
+// 			endif &&
 
-			// Make sure that a response exists for every request or there is a flush request
-			exists i in 0..v_imem_slack:
-				(
-					(next(if_parcel_pc, i) == if_nxt_pc) &&
-					(next(if_parcel_valid,i) == 2'b11)
-				) ||
-				(next(if_flush, i) == 1)
-			end exists &&
+// 			// Make sure that a response exists for every request or there is a flush request
+// 			exists i in 0..v_imem_slack:
+// 				(
+// 					(next(if_parcel_pc, i) == if_nxt_pc) &&
+// 					(next(if_parcel_valid,i) == 2'b11)
+// 				) ||
+// 				(next(if_flush, i) == 1)
+// 			end exists &&
 			
-			// Every occurance where pc matches has to be valid (helps to prevent some unwanted behaviour)
-			foreach i in 0..v_imem_slack:
-				if (next(if_flush, i) == 0)
-					if (next(if_parcel_pc,i) == if_nxt_pc)
-						(next(if_parcel_valid,i) == 2'b11)
-					endif
-				endif
-			end foreach &&
+// 			// Every occurance where pc matches has to be valid (helps to prevent some unwanted behaviour)
+// 			foreach i in 0..v_imem_slack:
+// 				if (next(if_flush, i) == 0)
+// 					if (next(if_parcel_pc,i) == if_nxt_pc)
+// 						(next(if_parcel_valid,i) == 2'b11)
+// 					endif
+// 				endif
+// 			end foreach &&
 
-			// Make sure once response occurs then it is valid till a flush occurs
-			foreach i in 0..v_imem_slack:
-				if ((next(if_flush, i) == 0) && (next(if_flush, i+1) == 0))
-					if (next(if_parcel_pc,i) == if_nxt_pc)
-						if (next(if_stall, i) == 0)
-							(next(if_parcel_pc,i+1) == next(if_nxt_pc)) &&
-							(next(if_parcel_valid,i+1) == 2'b11)
-						endif
-					endif	
-				endif
-			end foreach &&
+// 			// Make sure once response occurs then it is valid till a flush occurs
+// 			foreach i in 0..v_imem_slack:
+// 				if ((next(if_flush, i) == 0) && (next(if_flush, i+1) == 0))
+// 					if (next(if_parcel_pc,i) == if_nxt_pc)
+// 						if (next(if_stall, i) == 0)
+// 							(next(if_parcel_pc,i+1) == next(if_nxt_pc)) &&
+// 							(next(if_parcel_valid,i+1) == 2'b11)
+// 						endif
+// 					endif	
+// 				endif
+// 			end foreach &&
 
-			// Make sure that after flush all values are reset till the next response
-			if (fell(if_flush) || fell(m_rst))
-				foreach i in 0..v_imem_slack:
-					if ((next(if_parcel_pc,i) != if_nxt_pc) && (next(if_parcel_valid, i-1) == 2'b00))
-						(next(if_parcel_valid,i) == 2'b00)
-					endif
-				end foreach
-			endif
+// 			// Make sure that after flush all values are reset till the next response
+// 			if (fell(if_flush) || fell(m_rst))
+// 				foreach i in 0..v_imem_slack:
+// 					if ((next(if_parcel_pc,i) != if_nxt_pc) && (next(if_parcel_valid, i-1) == 2'b00))
+// 						(next(if_parcel_valid,i) == 2'b00)
+// 					endif
+// 				end foreach
+// 			endif
 
-		else
-			// if_flush == 1
-			if_parcel_valid == 2'b00
-		endif
-	else
-		// m_rst == 1
-		(if_parcel_valid == 2'b00) &&
-		(if_parcel_pc == 32'h00000000)
+// 		else
+// 			// if_flush == 1
+// 			if_parcel_valid == 2'b00
+// 		endif
+// 	else
+// 		// m_rst == 1
+// 		(if_parcel_valid == 2'b00) &&
+// 		(if_parcel_pc == 32'h00000000)
+// 	endif &&
+
+// 	(if_parcel_misaligned == 0) &&
+// 	(if_parcel_page_fault == 0) &&
+// 	(if_stall_nxt_pc == 0) &&
+
+// 	// Clean the values if the parcel is not valid
+// 	if (if_parcel_valid != 2'b11)
+// 		(if_parcel == 32'h00000000)
+// 	endif;
+// end constraint;
+
+constraint c_dmem_response_unfair :=
+	if (m_rst)
+    	dmem_ack == 0
 	endif &&
-
-	(if_parcel_misaligned == 0) &&
-	(if_parcel_page_fault == 0) &&
-	(if_stall_nxt_pc == 0) &&
-
-	// Clean the values if the parcel is not valid
-	if (if_parcel_valid != 2'b11)
-		(if_parcel == 32'h00000000)
-	endif;
+   (dmem_err == 0) &&
+   (dmem_misaligned == 0) &&
+   (dmem_page_fault == 0);
 end constraint;
 
 constraint c_dmem_response_simple :=
@@ -142,45 +166,45 @@ constraint c_dmem_response_simple :=
 	(dmem_page_fault == 0);
 end constraint;
 
-constraint c_dmem_response_complex :=
-	if (!m_rst)
+// constraint c_dmem_response_complex :=
+// 	if (!m_rst)
 
-		if (dmem_req == 1)
-			exists i in 0..v_dmem_slack:
-				next(dmem_ack,i+1) == 1
-			end exists
-		endif &&
+// 		if (dmem_req == 1)
+// 			exists i in 0..v_dmem_slack:
+// 				next(dmem_ack,i+1) == 1
+// 			end exists
+// 		endif &&
 
-		if (next(dmem_ack, v_dmem_slack+1) == 1)
-			exists i in 0..v_dmem_slack:
-				next(dmem_req,i) == 1
-			end exists
-		endif &&
+// 		if (next(dmem_ack, v_dmem_slack+1) == 1)
+// 			exists i in 0..v_dmem_slack:
+// 				next(dmem_req,i) == 1
+// 			end exists
+// 		endif &&
 
-		foreach i in 0..v_dmem_slack:
-			if (dmem_req == 1)
-				if (next(dmem_ack,i+1) == dmem_req)
-					next(dmem_ack,i+2) == next(dmem_req)
-				endif
-			endif
-		end foreach &&
+// 		foreach i in 0..v_dmem_slack:
+// 			if (dmem_req == 1)
+// 				if (next(dmem_ack,i+1) == dmem_req)
+// 					next(dmem_ack,i+2) == next(dmem_req)
+// 				endif
+// 			endif
+// 		end foreach &&
 
-		if (fell(m_rst))
-			foreach i in 0..v_dmem_slack:
-				if (next(dmem_req,i) == 0)
-					(next(dmem_ack,i+1) == 0)
-				endif
-			end foreach &&
-			(dmem_ack == 0)
-		endif
+// 		if (fell(m_rst))
+// 			foreach i in 0..v_dmem_slack:
+// 				if (next(dmem_req,i) == 0)
+// 					(next(dmem_ack,i+1) == 0)
+// 				endif
+// 			end foreach &&
+// 			(dmem_ack == 0)
+// 		endif
 
-    else
-    	dmem_ack == 0
-	endif &&
-   (dmem_err == 0) &&
-   (dmem_misaligned == 0) &&
-   (dmem_page_fault == 0);
-end constraint;
+//     else
+//     	dmem_ack == 0
+// 	endif &&
+//    (dmem_err == 0) &&
+//    (dmem_misaligned == 0) &&
+//    (dmem_page_fault == 0);
+// end constraint;
 
 constraint c_no_bu_flush :=
 	if (!m_rst)
