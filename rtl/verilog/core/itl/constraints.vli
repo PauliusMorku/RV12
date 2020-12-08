@@ -275,7 +275,7 @@ end constraint;
   // CAUSE_LOAD_PAGE_FAULT          = 13,
   // CAUSE_STORE_PAGE_FAULT         = 15;
 
-macro unsigned EXCEPTION_MASK := 16'b0000000000000100 end macro;
+macro unsigned EXCEPTION_MASK := 16'b0000000000000101 end macro;
 
 constraint c_exception_config :=
 	if (!m_rst)

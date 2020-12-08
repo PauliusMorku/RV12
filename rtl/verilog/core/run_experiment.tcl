@@ -15,7 +15,7 @@ set COMMON_ROOT_DIR $::env(WORKSPACE_DIR)
 ################################################################################################
 # Comment for the experiment (will appear in the OneSpin log files and the generated report)
 ################################################################################################
-set comment ""
+set comment "not allowing missaligned instructions, unfair constraints"
 
 ################################################################################################
 # Generate report from all experiments in the result directory (1 - enable, 0 - disable)
@@ -67,11 +67,8 @@ set verilog_files {
 	RV12/rtl/verilog/core/top.sv
 }
 
-################################################################################################
-# Read common variables and launch - do not modify
-################################################################################################
+
 set config_file [info script]
-# source $ONESPIN_SCRIPT_DIR/launcher.tcl
 source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
 
 } else {
@@ -79,7 +76,7 @@ source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
 
 	set_mode setup
 	delete_design -both
-	read_verilog -golden  -pragma_ignore {}  -version sv2012 $verilog_files_onespin
+	read_verilog -golden -pragma_ignore {} -version sv2012 $verilog_files_onespin
 	elaborate -golden
 	compile
 	set_reset_sequence rstn=0
@@ -87,6 +84,8 @@ source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
 	set_check_option -verbose
 	read_itl $itl_files_onespin
 
-	check base
-	#check step
+	#check -all [get_properties]
+	#check base
+	check step
+	#check window_check
 }
