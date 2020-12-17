@@ -10,7 +10,7 @@ im	dm	ew
 2	1	20	
 2	2	22
 
-c_imem_response_simple, c_dmem_response_simple:
+c_imem_fairness, c_dmem_fairness:
 im	dm	ew
 0	0	12	
 1	1	17
@@ -42,7 +42,7 @@ Y88b 888 d88P 888 888  888 Y88b 888 Y88..88P Y88b 888 d88P          Y88b.    888
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property window_check;
-dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_dmem_response;
 
 for timepoints:
 	t2_PF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_tx(2),
@@ -88,7 +88,7 @@ assume:
 	// at t+v_examination_window: mg_tn_WB_tx(2);
 	// during[t,t+v_examination_window-1]: !mg_tn_WB_tx(2);
 
-
+	during[t,t+v_examination_window]: c_imem_fairness && c_dmem_fairness;
 
 	at t+v_examination_window: (
 			fell(next(t2_PF_tx_wait)) || 
@@ -156,7 +156,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property base;
-dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_imem_fairness, c_dmem_response, c_dmem_fairness;
 for timepoints:
 	t1_PF_rx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(1),
 
@@ -327,7 +327,7 @@ d88P"  888                   888                        888                     
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property flush_check;
-dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_imem_fairness, c_dmem_response, c_dmem_fairness;
 for timepoints:
 	t1_PF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(1),
 	t2_PF_rx_n = t + 0..v_examination_window waits_for complete mg_tn_PF_rx(2),
@@ -426,7 +426,7 @@ end property;
 
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 property sanity;
-dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_imem_fairness, c_dmem_response, c_dmem_fairness;
 for timepoints:
 	// t1 detection
 	t1_PF_rx_n = t,
@@ -536,7 +536,7 @@ end property;
 
 
 // property mem_sanity;
-// dependencies: c_imem_response_simple, c_dmem_response_simple;
+// dependencies: c_imem_fairness, c_dmem_fairness;
 // assume:
 // 	at t: mg_tn_PF_rx(1);
 
@@ -569,7 +569,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property step;
-dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_unfair, c_dmem_response_unfair, c_exception_config;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_dmem_response, c_exception_config;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
@@ -742,7 +742,7 @@ assume:
 	at t1_flush_f: mg_tn_flush(1) == false;
 	at t2_flush_f: mg_tn_flush(2) == false;
 
-	during[t,t+v_examination_window]: c_imem_response_simple && c_dmem_response_simple;
+	during[t,t+v_examination_window]: c_imem_fairness && c_dmem_fairness;
 
 	//within[t,t+5]: m_IF_tx && !m_ID_rx;
 	//within[t,t+15]: if_parcel_valid == 2'b01;
@@ -750,13 +750,13 @@ assume:
 	//at t: at_t2_PF_tx_exist == false;
 	//at t: at_t2_PF_port_instr == INSTR_ILLEGAL;
 
-	//at t: (RD_FIELD(at_t2_PF_port_instr) == 1);
+	at t: (RD_FIELD(at_t2_PF_port_instr) == 1);
 	at t: (RS1_FIELD(at_t2_PF_port_instr) == 1);
 	at t: (getOpcode(at_t2_PF_port_instr) == OPCODE_I);
 	//at t: (getInstr(at_t2_PF_port_instr) == ADDI_INSTR);
 
 	// at t: (RD_FIELD(at_tl_PF_instr) == 0);
-	// //at t: (RS1_FIELD(at_tl_PF_instr) == 0);
+	// at t: (RS1_FIELD(at_tl_PF_instr) == 0);
 	// at t: (getOpcode(at_tl_PF_instr) == OPCODE_I_L);
 	// at t: (getInstr(at_tl_PF_instr) == LW_INSTR);
 
@@ -928,7 +928,7 @@ Y88b 888 d88P 888 888  888 Y88b 888 Y88..88P Y88b 888 d88P          Y88b.    888
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property window_check_f1;
-dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_imem_fairness, c_dmem_response, c_dmem_fairness;
 
 for timepoints:
 	t3_PF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_tx(3),
@@ -1045,7 +1045,7 @@ end property;
 */////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 property step_f1;
-dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response_simple, c_dmem_response_simple;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_imem_fairness, c_dmem_response, c_dmem_fairness;
 for timepoints:
 
 	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages

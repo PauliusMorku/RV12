@@ -15,17 +15,12 @@ set COMMON_ROOT_DIR $::env(WORKSPACE_DIR)
 ################################################################################################
 # Comment for the experiment (will appear in the OneSpin log files and the generated report)
 ################################################################################################
-set comment "not allowing missaligned instructions, unfair constraints"
+set comment "check windows with unfair constraints"
 
 ################################################################################################
 # Generate report from all experiments in the result directory (1 - enable, 0 - disable)
 ################################################################################################
 set generate_report 1
-
-################################################################################################
-# Copy experiment files before running checks (1 - enable, 0 - disable)
-################################################################################################
-set make_copy 1
 
 ################################################################################################
 # ITL property files, similarly named TCL files will be sourced automatically
@@ -86,6 +81,6 @@ source $ONESPIN_SCRIPT_DIR/run_checks_simple.tcl
 
 	#check -all [get_properties]
 	#check base
-	check step
-	#check window_check
+	#check step
+	check window_check
 }
