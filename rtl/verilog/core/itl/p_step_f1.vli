@@ -1,0 +1,378 @@
+/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+         888                                .d888  d888   
+         888                               d88P"  d8888   
+         888                               888      888   
+.d8888b  888888  .d88b.  88888b.           888888   888   
+88K      888    d8P  Y8b 888 "88b          888      888   
+"Y8888b. 888    88888888 888  888          888      888   
+     X88 Y88b.  Y8b.     888 d88P          888      888   
+ 88888P'  "Y888  "Y8888  88888P"  88888888 888    8888888 
+                         888                              
+                         888                              
+                         888
+
+*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+property step_f1;
+dependencies: c_no_reset, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_imem_fairness, c_dmem_response, c_dmem_fairness;
+for timepoints:
+
+	// This code detects last use of the stage that can come from either t1 or some older token if t1 contains skipped stages
+	// tl detection
+	tl_PF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_PF_tx,
+	tl_PF_tx_l = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_PF_tx_wait), // Occurance after t
+
+	tl_IF_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_IF_rx,
+	tl_IF_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_IF_rx_wait), // Occurance after tl_PF_tx_l
+	tl_IF_rx_l = max_timepoint(tl_IF_rx_l1, tl_PF_tx_l), 
+
+	tl_IF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_IF_tx,
+	tl_IF_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_IF_tx_wait), // Occurance after tl_IF_rx_l1+1
+	tl_IF_tx_l = max_timepoint(tl_IF_tx_l1, tl_IF_rx_l),
+
+	tl_ID_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_ID_rx,
+	tl_ID_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_ID_rx_wait), // Occurance after tl_IF_tx_l
+	tl_ID_rx_l = max_timepoint(tl_ID_rx_l1, tl_IF_tx_l), 
+
+	tl_ID_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_ID_tx,
+	tl_ID_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_ID_tx_wait), // Occurance after tl_ID_rx_l1+1
+	tl_ID_tx_l = max_timepoint(tl_ID_tx_l1, tl_ID_rx_l),
+
+	tl_EX_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_EX_rx,
+	tl_EX_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_EX_rx_wait), // Occurance after tl_ID_tx_l
+	tl_EX_rx_l = max_timepoint(tl_EX_rx_l1, tl_ID_tx_l),
+
+	tl_EX_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_EX_tx,
+	tl_EX_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_EX_tx_wait), // Occurance after tl_EX_rx_l1+1
+	tl_EX_tx_l = max_timepoint(tl_EX_tx_l1, tl_EX_rx_l),
+
+	tl_ME_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_ME_rx,
+	tl_ME_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_ME_rx_wait), // Occurance after tl_EX_tx_l1
+	tl_ME_rx_l = max_timepoint(tl_ME_rx_l1, tl_EX_tx_l),
+
+	tl_ME_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_ME_tx,
+	tl_ME_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_ME_tx_wait), // Occurance after tl_ME_rx_l1+1
+	tl_ME_tx_l = max_timepoint(tl_ME_tx_l1, tl_ME_rx_l),
+
+	tl_WB_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_WB_rx,
+	tl_WB_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_WB_rx_wait), // Occurance after tl_ME_tx_l1
+	tl_WB_rx_l = max_timepoint(tl_WB_rx_l1, tl_ME_tx_l),
+
+	tl_WB_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tl_WB_tx,
+	tl_WB_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(tl_WB_tx_wait), // Occurance after tl_WB_rx_l1+1
+	tl_WB_tx_l = max_timepoint(tl_WB_tx_l1, tl_WB_rx_l),
+
+
+	// t1 detection
+	t1_PF_rx_n = t,
+
+	// t2 detection
+	t2_PF_rx_n = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_rx(2),
+
+	t2_PF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_tx(2),
+	t2_PF_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_PF_tx_wait),
+	t2_PF_tx_l = max_timepoint(t2_PF_tx_l1, t2_PF_rx_n),
+
+	t2_PF_wn_l = t2_PF_rx_n,
+	t2_PF_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_lim(2),
+
+	t2_IF_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_rx(2),
+	t2_IF_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_IF_rx_wait),
+	t2_IF_rx_l2 = max_timepoint(t2_IF_rx_l1, t2_PF_tx_l),
+	t2_IF_rx_l = max_timepoint(t2_IF_rx_l2, tl_ID_rx_l),
+
+	t2_IF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_tx(2),
+	t2_IF_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_IF_tx_wait),
+	t2_IF_tx_l = max_timepoint(t2_IF_tx_l1, t2_IF_rx_l),
+
+	t2_IF_wn_l = t2_IF_rx_l,
+	t2_IF_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_lim(2),
+
+	t2_ID_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_rx(2),
+	t2_ID_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_ID_rx_wait),
+	t2_ID_rx_l2 = max_timepoint(t2_ID_rx_l1, t2_IF_tx_l),
+	t2_ID_rx_l = max_timepoint(t2_ID_rx_l2, tl_EX_rx_l),
+
+	t2_ID_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_tx(2),
+	t2_ID_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_ID_tx_wait),
+	t2_ID_tx_l = max_timepoint(t2_ID_tx_l1, t2_ID_rx_l),
+
+	t2_ID_wn_l = t2_ID_rx_l,
+	t2_ID_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_lim(2),
+
+	t2_EX_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_rx(2),
+	t2_EX_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_EX_rx_wait),
+	t2_EX_rx_l2 = max_timepoint(t2_EX_rx_l1, t2_ID_tx_l),
+	t2_EX_rx_l = max_timepoint(t2_EX_rx_l2, tl_ME_rx_l),
+
+	t2_EX_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_tx(2),
+	t2_EX_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_EX_tx_wait),
+	t2_EX_tx_l = max_timepoint(t2_EX_tx_l1, t2_EX_rx_l),
+
+	t2_EX_wn_l = t2_EX_rx_l,
+	t2_EX_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_lim(2),
+
+	t2_ME_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_rx(2),
+	t2_ME_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_ME_rx_wait),
+	t2_ME_rx_l2 = max_timepoint(t2_ME_rx_l1, t2_EX_tx_l),
+	t2_ME_rx_l = max_timepoint(t2_ME_rx_l2, tl_WB_rx_l),
+
+	t2_ME_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_tx(2),
+	t2_ME_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_ME_tx_wait),
+	t2_ME_tx_l = max_timepoint(t2_ME_tx_l1, t2_ME_rx_l),
+
+	t2_ME_wn_l = t2_ME_rx_l,
+	t2_ME_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_lim(2),
+
+	t2_WB_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_rx(2),
+	t2_WB_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_WB_rx_wait),
+	t2_WB_rx_l2 = max_timepoint(t2_WB_rx_l1, t2_ME_tx_l),
+	t2_WB_rx_l = max_timepoint(t2_WB_rx_l2, tl_WB_tx_l), // special case since it is the last pipeline stage
+
+	t2_WB_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_tx(2),
+	t2_WB_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t2_WB_tx_wait),
+	t2_WB_tx_l = max_timepoint(t2_WB_tx_l1, t2_WB_rx_l),
+
+	t2_WB_wn_l = t2_WB_rx_l,
+	t2_WB_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_lim(2),
+
+	// t3 detection
+	t3_PF_rx_n = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_rx(3),
+
+	t3_PF_port_rx = t + 0..v_examination_window waits_for complete mg_tn_PF_port_rx(3),
+
+	t3_PF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_tx(3),
+	t3_PF_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_PF_tx_wait),
+	t3_PF_tx_l = max_timepoint(t3_PF_tx_l1, t3_PF_rx_n),
+
+	t3_PF_wn_l = t3_PF_rx_n,
+	t3_PF_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_PF_lim(3),
+
+	t3_IF_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_rx(3),
+	t3_IF_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_IF_rx_wait),
+	t3_IF_rx_l2 = max_timepoint(t3_IF_rx_l1, t3_PF_tx_l),
+	t3_IF_rx_l = max_timepoint(t3_IF_rx_l2, t2_ID_rx_l),
+
+	t3_IF_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_tx(3),
+	t3_IF_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_IF_tx_wait),
+	t3_IF_tx_l = max_timepoint(t3_IF_tx_l1, t3_IF_rx_l),
+
+	t3_IF_wn_l = t3_IF_rx_l,
+	t3_IF_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_IF_lim(3),
+
+	t3_ID_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_rx(3),
+	t3_ID_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_ID_rx_wait),
+	t3_ID_rx_l2 = max_timepoint(t3_ID_rx_l1, t3_IF_tx_l),
+	t3_ID_rx_l = max_timepoint(t3_ID_rx_l2, t2_EX_rx_l),
+
+	t3_ID_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_tx(3),
+	t3_ID_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_ID_tx_wait),
+	t3_ID_tx_l = max_timepoint(t3_ID_tx_l1, t3_ID_rx_l),
+
+	t3_ID_wn_l = t3_ID_rx_l,
+	t3_ID_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_ID_lim(3),
+
+	t3_EX_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_rx(3),
+	t3_EX_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_EX_rx_wait),
+	t3_EX_rx_l2 = max_timepoint(t3_EX_rx_l1, t3_ID_tx_l),
+	t3_EX_rx_l = max_timepoint(t3_EX_rx_l2, t2_ME_rx_l),
+
+	t3_EX_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_tx(3),
+	t3_EX_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_EX_tx_wait),
+	t3_EX_tx_l = max_timepoint(t3_EX_tx_l1, t3_EX_rx_l),
+
+	t3_EX_wn_l = t3_EX_rx_l,
+	t3_EX_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_EX_lim(3),
+
+	t3_ME_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_rx(3),
+	t3_ME_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_ME_rx_wait),
+	t3_ME_rx_l2 = max_timepoint(t3_ME_rx_l1, t3_EX_tx_l),
+	t3_ME_rx_l = max_timepoint(t3_ME_rx_l2, t2_WB_rx_l),
+
+	t3_ME_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_tx(3),
+	t3_ME_tx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_ME_tx_wait),
+	t3_ME_tx_l = max_timepoint(t3_ME_tx_l1, t3_ME_rx_l),
+
+	t3_ME_wn_l = t3_ME_rx_l,
+	t3_ME_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_ME_lim(3),
+
+	t3_WB_rx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_rx(3),
+	t3_WB_rx_l1 = t + 0..v_examination_window_f1 waits_for complete mg_flag_wait(t3_WB_rx_wait),
+	t3_WB_rx_l2 = max_timepoint(t3_WB_rx_l1, t3_ME_tx_l),
+	t3_WB_rx_l = max_timepoint(t3_WB_rx_l2, t2_WB_tx_l), // special case since it is the last pipeline stage
+
+	t3_WB_tx_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_tx(3),
+
+	t3_WB_wn_l = t3_WB_rx_l,
+	t3_WB_wn_r = t + 0..v_examination_window_f1 waits_for complete mg_tn_WB_lim(3),
+
+
+	// Detect flushing cases
+	t1_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(1),
+	t2_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(2),
+	t3_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(3),
+	t4_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(4),
+	t5_flush_f = t + 0..v_examination_window_f1 waits_for complete mg_tn_flush(5),
+
+	t_dummy = t; // last dummy line (for the semicolon)
+
+freeze:
+	at_tl_PF_tx_exist = mg_tl_PF_tx@tl_PF_tx_f,
+	at_tl_IF_rx_exist = mg_tl_IF_rx@tl_IF_rx_f,
+	at_tl_IF_tx_exist = mg_tl_IF_tx@tl_IF_tx_f,
+	at_tl_ID_rx_exist = mg_tl_ID_rx@tl_ID_rx_f,
+	at_tl_ID_tx_exist = mg_tl_ID_tx@tl_ID_tx_f,
+	at_tl_EX_rx_exist = mg_tl_EX_rx@tl_EX_rx_f,
+	at_tl_EX_tx_exist = mg_tl_EX_tx@tl_EX_tx_f,
+	at_tl_ME_rx_exist = mg_tl_ME_rx@tl_ME_rx_f,
+	at_tl_ME_tx_exist = mg_tl_ME_tx@tl_ME_tx_f,
+	at_tl_WB_rx_exist = mg_tl_WB_rx@tl_WB_rx_f,
+	at_tl_WB_tx_exist = mg_tl_WB_tx@tl_WB_tx_f,
+
+	at_t2_PF_tx_exist = mg_tn_PF_tx(2)@t2_PF_tx_f,
+	at_t2_IF_rx_exist = mg_tn_IF_rx(2)@t2_IF_rx_f,
+	at_t2_IF_tx_exist = mg_tn_IF_tx(2)@t2_IF_tx_f,
+	at_t2_ID_rx_exist = mg_tn_ID_rx(2)@t2_ID_rx_f,
+	at_t2_ID_tx_exist = mg_tn_ID_tx(2)@t2_ID_tx_f,
+	at_t2_EX_rx_exist = mg_tn_EX_rx(2)@t2_EX_rx_f,
+	at_t2_EX_tx_exist = mg_tn_EX_tx(2)@t2_EX_tx_f,
+	at_t2_ME_rx_exist = mg_tn_ME_rx(2)@t2_ME_rx_f,
+	at_t2_ME_tx_exist = mg_tn_ME_tx(2)@t2_ME_tx_f,
+	at_t2_WB_rx_exist = mg_tn_WB_rx(2)@t2_WB_rx_f,
+	at_t2_WB_tx_exist = mg_tn_WB_tx(2)@t2_WB_tx_f,
+
+	at_t3_PF_tx_exist = mg_tn_PF_tx(3)@t3_PF_tx_f,
+	at_t3_IF_rx_exist = mg_tn_IF_rx(3)@t3_IF_rx_f,
+	at_t3_IF_tx_exist = mg_tn_IF_tx(3)@t3_IF_tx_f,
+	at_t3_ID_rx_exist = mg_tn_ID_rx(3)@t3_ID_rx_f,
+	at_t3_ID_tx_exist = mg_tn_ID_tx(3)@t3_ID_tx_f,
+	at_t3_EX_rx_exist = mg_tn_EX_rx(3)@t3_EX_rx_f,
+	at_t3_EX_tx_exist = mg_tn_EX_tx(3)@t3_EX_tx_f,
+	at_t3_ME_rx_exist = mg_tn_ME_rx(3)@t3_ME_rx_f,
+	at_t3_ME_tx_exist = mg_tn_ME_tx(3)@t3_ME_tx_f,
+	at_t3_WB_rx_exist = mg_tn_WB_rx(3)@t3_WB_rx_f,
+	at_t3_WB_tx_exist = mg_tn_WB_tx(3)@t3_WB_tx_f,
+
+	at_t3_PF_tx_instr = m_PF_instr@t3_PF_tx_f,
+	at_t3_IF_tx_instr = m_IF_instr@t3_IF_tx_f,
+	at_t3_ID_tx_instr = m_ID_instr@t3_ID_tx_f,
+	at_t3_EX_tx_instr = m_EX_instr@t3_EX_tx_f,
+	at_t3_ME_tx_instr = m_ME_instr@t3_ME_tx_f,
+	at_t3_WB_tx_instr = m_WB_instr@t3_WB_tx_f,
+
+	at_t3_PF_tx_pc = m_PF_pc@t3_PF_tx_f,
+	at_t3_IF_tx_pc = m_IF_pc@t3_IF_tx_f,
+	at_t3_ID_tx_pc = m_ID_pc@t3_ID_tx_f,
+	at_t3_EX_tx_pc = m_EX_pc@t3_EX_tx_f,
+	at_t3_ME_tx_pc = m_ME_pc@t3_ME_tx_f,
+	at_t3_WB_tx_pc = m_WB_pc@t3_WB_tx_f,
+
+	at_t3_PF_port_instr = m_PF_port_instr@t3_PF_port_rx,
+	at_t3_PF_port_pc = m_PF_port_pc@t3_PF_port_rx,
+
+	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
+
+assume:
+	// Property is triggered whenever a token enters first pipeline stage
+	at t1_PF_rx_n: mg_tn_PF_rx(1);
+
+	// Define flushing scenario
+	at t1_flush_f: mg_tn_flush(1) == false;
+	at t2_flush_f: mg_tn_flush(2) == true;
+	at t3_flush_f: mg_tn_flush(3) == false;
+
+	//at t: at_t3_PF_tx_exist == false;
+	//within[t,t+5]: m_IF_tx && !m_ID_rx;
+
+	//at t2_IF_tx_f: !m_ID_rx;
+	//at t2_IF_tx_f: at_t2_IF_tx_exist;
+
+	// Configure token counters
+	at t: PF_wcnt == 0;
+	at t: IF_wcnt == 0;
+	at t: ID_wcnt == 0;
+	at t: EX_wcnt == 0;
+	at t: ME_wcnt == 0;
+	at t: WB_wcnt == 0;
+
+	during[t,t+v_examination_window_f1]: PF_wcnt_inc == m_PF_rx;
+	during[t,t+v_examination_window_f1]: IF_wcnt_inc == m_IF_rx;
+	during[t,t+v_examination_window_f1]: ID_wcnt_inc == m_ID_rx;
+	during[t,t+v_examination_window_f1]: EX_wcnt_inc == m_EX_rx;
+	during[t,t+v_examination_window_f1]: ME_wcnt_inc == m_ME_rx;
+	during[t,t+v_examination_window_f1]: WB_wcnt_inc == m_WB_rx;
+
+	during[t,t+v_examination_window_f1]: PF_trem == m_PF_tx;
+	during[t,t+v_examination_window_f1]: IF_trem == m_IF_tx;
+	during[t,t+v_examination_window_f1]: ID_trem == m_ID_tx;
+	during[t,t+v_examination_window_f1]: EX_trem == m_EX_tx;
+	during[t,t+v_examination_window_f1]: ME_trem == m_ME_tx;
+	during[t,t+v_examination_window_f1]: WB_trem == m_WB_tx;
+
+	// Configure transaction flag variables
+	mg_flag_define(tl_PF_tx_wait, at_tl_PF_tx_exist, v_examination_window_f1, tl_PF_tx_f, t);
+	mg_flag_define(tl_IF_rx_wait, at_tl_IF_rx_exist, v_examination_window_f1, tl_IF_rx_f, t);
+	mg_flag_define(tl_IF_tx_wait, at_tl_IF_tx_exist, v_examination_window_f1, tl_IF_tx_f, t);
+	mg_flag_define(tl_ID_rx_wait, at_tl_ID_rx_exist, v_examination_window_f1, tl_ID_rx_f, t);
+	mg_flag_define(tl_ID_tx_wait, at_tl_ID_tx_exist, v_examination_window_f1, tl_ID_tx_f, t);
+	mg_flag_define(tl_EX_rx_wait, at_tl_EX_rx_exist, v_examination_window_f1, tl_EX_rx_f, t);
+	mg_flag_define(tl_EX_tx_wait, at_tl_EX_tx_exist, v_examination_window_f1, tl_EX_tx_f, t);
+	mg_flag_define(tl_ME_rx_wait, at_tl_ME_rx_exist, v_examination_window_f1, tl_ME_rx_f, t);
+	mg_flag_define(tl_ME_tx_wait, at_tl_ME_tx_exist, v_examination_window_f1, tl_ME_tx_f, t);
+	mg_flag_define(tl_WB_rx_wait, at_tl_WB_rx_exist, v_examination_window_f1, tl_WB_rx_f, t);
+	mg_flag_define(tl_WB_tx_wait, at_tl_WB_tx_exist, v_examination_window_f1, tl_WB_tx_f, t);
+
+	mg_flag_define(t2_PF_tx_wait, at_t2_PF_tx_exist, v_examination_window_f1, t2_PF_tx_f, t);
+	mg_flag_define(t2_IF_rx_wait, at_t2_IF_rx_exist, v_examination_window_f1, t2_IF_rx_f, t);
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window_f1, t2_IF_tx_f, t);
+	mg_flag_define(t2_ID_rx_wait, at_t2_ID_rx_exist, v_examination_window_f1, t2_ID_rx_f, t);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window_f1, t2_ID_tx_f, t);
+	mg_flag_define(t2_EX_rx_wait, at_t2_EX_rx_exist, v_examination_window_f1, t2_EX_rx_f, t);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window_f1, t2_EX_tx_f, t);
+	mg_flag_define(t2_ME_rx_wait, at_t2_ME_rx_exist, v_examination_window_f1, t2_ME_rx_f, t);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window_f1, t2_ME_tx_f, t);
+	mg_flag_define(t2_WB_rx_wait, at_t2_WB_rx_exist, v_examination_window_f1, t2_WB_rx_f, t);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window_f1, t2_WB_tx_f, t);
+
+	mg_flag_define(t3_PF_tx_wait, at_t3_PF_tx_exist, v_examination_window_f1, t3_PF_tx_f, t);
+	mg_flag_define(t3_IF_rx_wait, at_t3_IF_rx_exist, v_examination_window_f1, t3_IF_rx_f, t);
+	mg_flag_define(t3_IF_tx_wait, at_t3_IF_tx_exist, v_examination_window_f1, t3_IF_tx_f, t);
+	mg_flag_define(t3_ID_rx_wait, at_t3_ID_rx_exist, v_examination_window_f1, t3_ID_rx_f, t);
+	mg_flag_define(t3_ID_tx_wait, at_t3_ID_tx_exist, v_examination_window_f1, t3_ID_tx_f, t);
+	mg_flag_define(t3_EX_rx_wait, at_t3_EX_rx_exist, v_examination_window_f1, t3_EX_rx_f, t);
+	mg_flag_define(t3_EX_tx_wait, at_t3_EX_tx_exist, v_examination_window_f1, t3_EX_tx_f, t);
+	mg_flag_define(t3_ME_rx_wait, at_t3_ME_rx_exist, v_examination_window_f1, t3_ME_rx_f, t);
+	mg_flag_define(t3_ME_tx_wait, at_t3_ME_tx_exist, v_examination_window_f1, t3_ME_tx_f, t);
+	mg_flag_define(t3_WB_rx_wait, at_t3_WB_rx_exist, v_examination_window_f1, t3_WB_rx_f, t);
+	mg_flag_define(t3_WB_tx_wait, at_t3_WB_tx_exist, v_examination_window_f1, t3_WB_tx_f, t);
+
+	// For debugging
+	during[t,t+v_examination_window_f1]: IN_instr_enum == getInstr(if_parcel);
+	during[t,t+v_examination_window_f1]: PF_instr_enum == getInstr(m_PF_instr);
+	during[t,t+v_examination_window_f1]: IF_instr_enum == getInstr(m_IF_instr);
+	during[t,t+v_examination_window_f1]: ID_instr_enum == getInstr(m_ID_instr);
+	during[t,t+v_examination_window_f1]: EX_instr_enum == getInstr(m_EX_instr);
+	during[t,t+v_examination_window_f1]: ME_instr_enum == getInstr(m_ME_instr);
+	during[t,t+v_examination_window_f1]: WB_instr_enum == getInstr(m_WB_instr);
+
+prove:
+	// Prove right hook
+	at t3_PF_rx_n: mg_tn_PF_rx(3);
+
+	at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_instr == ((at_t3_PF_port_instr != INSTR_WFI) ? at_t3_PF_port_instr : INSTR_NOP) endif;
+	at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_instr == at_t3_PF_tx_instr endif;
+	at t3_ID_tx_f: if (at_t3_ID_tx_exist) m_ID_instr == at_t3_IF_tx_instr endif;
+	at t3_EX_tx_f: if (at_t3_EX_tx_exist) m_EX_instr == at_t3_ID_tx_instr endif;
+	at t3_ME_tx_f: if (at_t3_ME_tx_exist) m_ME_instr == at_t3_EX_tx_instr endif;
+	at t3_WB_tx_f: if (at_t3_WB_tx_exist) m_WB_instr == at_t3_ME_tx_instr endif;
+
+	at t3_PF_tx_f: if (at_t3_PF_tx_exist) m_PF_pc == at_t3_PF_port_pc endif;
+	at t3_IF_tx_f: if (at_t3_IF_tx_exist) m_IF_pc == at_t3_PF_tx_pc endif;
+	at t3_ID_tx_f: if (at_t3_ID_tx_exist) m_ID_pc == at_t3_IF_tx_pc endif;
+	at t3_EX_tx_f: if (at_t3_EX_tx_exist) m_EX_pc == at_t3_ID_tx_pc endif;
+	at t3_ME_tx_f: if (at_t3_ME_tx_exist) m_ME_pc == at_t3_EX_tx_pc endif;
+	at t3_WB_tx_f: if (at_t3_WB_tx_exist) m_WB_pc == at_t3_ME_tx_pc endif;
+
+end property;
+

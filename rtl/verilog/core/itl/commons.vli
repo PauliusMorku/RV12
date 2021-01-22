@@ -52,6 +52,33 @@ macro logic m_WB_tx := ((c/wb_unit/wb_bubble_o == 0) && (c/wb_unit/wb_we_o != 0)
 //macro logic m_WB_tx := ((c/wb_unit/wb_bubble_o == 0)/* && (c/wb_unit/wb_stall_o == 0)*/) end macro;
 
 
+/*
+c_imem_response_complex, c_dmem_response_complex:
+im	dm	ew
+0	0	12	
+1	1	17
+2	1	20	
+2	2	22
+
+c_imem_fairness, c_dmem_fairness:
+im	dm	ew
+0	0	12	
+1	1	17
+2	1	20
+2	2	22
+*/
+
+// macro unsigned v_imem_slack := 2 end macro;
+// macro unsigned v_dmem_slack := 2 end macro;
+// macro unsigned v_examination_window := 26 end macro;
+// macro unsigned v_examination_window_f1 := 30 end macro;
+
+macro unsigned v_imem_slack := 1 end macro;
+macro unsigned v_dmem_slack := 1 end macro;
+macro unsigned v_examination_window := 20 end macro;
+macro unsigned v_examination_window_f1 := 25 end macro;
+
+
 
 macro unsigned m_WB_reg_01 := next(c/int_rf/rf[1]) end macro;
 

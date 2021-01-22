@@ -1,0 +1,112 @@
+/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+              d8b               888                                          888                        888      
+              Y8P               888                                          888                        888      
+                                888                                          888                        888      
+888  888  888 888 88888b.   .d88888  .d88b.  888  888  888           .d8888b 88888b.   .d88b.   .d8888b 888  888 
+888  888  888 888 888 "88b d88" 888 d88""88b 888  888  888          d88P"    888 "88b d8P  Y8b d88P"    888 .88P 
+888  888  888 888 888  888 888  888 888  888 888  888  888          888      888  888 88888888 888      888888K  
+Y88b 888 d88P 888 888  888 Y88b 888 Y88..88P Y88b 888 d88P          Y88b.    888  888 Y8b.     Y88b.    888 "88b 
+ "Y8888888P"  888 888  888  "Y88888  "Y88P"   "Y8888888P"  88888888  "Y8888P 888  888  "Y8888   "Y8888P 888  888 
+                                                                                                                                                                                                                                                                                                                                             
+*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+property window_check;
+dependencies: c_reset_overlap, c_no_debug, c_32bit_instr_only, c_no_st_flush, c_imem_response, c_dmem_response;
+
+for timepoints:
+	t2_PF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_PF_tx(2),
+	t2_IF_tx_f = t + 0..v_examination_window waits_for complete mg_tn_IF_tx(2),
+	t2_ID_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ID_tx(2),
+	t2_EX_tx_f = t + 0..v_examination_window waits_for complete mg_tn_EX_tx(2),
+	t2_ME_tx_f = t + 0..v_examination_window waits_for complete mg_tn_ME_tx(2),
+	t2_WB_tx_f = t + 0..v_examination_window waits_for complete mg_tn_WB_tx(2),
+
+	t_dummy = t; // last dummy line (for the semicolon)
+
+freeze:
+	at_t2_PF_tx_exist = mg_tn_PF_tx(2)@t2_PF_tx_f,
+	at_t2_IF_tx_exist = mg_tn_IF_tx(2)@t2_IF_tx_f,
+	at_t2_ID_tx_exist = mg_tn_ID_tx(2)@t2_ID_tx_f,
+	at_t2_EX_tx_exist = mg_tn_EX_tx(2)@t2_EX_tx_f,
+	at_t2_ME_tx_exist = mg_tn_ME_tx(2)@t2_ME_tx_f,
+	at_t2_WB_tx_exist = mg_tn_WB_tx(2)@t2_WB_tx_f,
+
+	at_t_dummy = clk@t_dummy; // last dummy line (for the semicolon)
+
+assume:
+
+	// Need separate property to check each stage tx case
+	// Note that each tx has to be the first occurance otherwise the property is not correct
+
+	// at t+v_examination_window: mg_tn_PF_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_PF_tx(2);
+
+	// at t+v_examination_window: mg_tn_IF_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_IF_tx(2);
+
+	// at t+v_examination_window: mg_tn_ID_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_ID_tx(2);
+
+	// at t+v_examination_window: mg_tn_EX_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_EX_tx(2);
+
+	// at t+v_examination_window: mg_tn_ME_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_ME_tx(2);
+
+	// at t+v_examination_window: mg_tn_WB_tx(2);
+	// during[t,t+v_examination_window-1]: !mg_tn_WB_tx(2);
+
+	during[t,t+v_examination_window]: c_imem_fairness && c_dmem_fairness;
+
+	at t+v_examination_window: (
+			fell(next(t2_PF_tx_wait)) || 
+			fell(next(t2_IF_tx_wait)) || 
+			fell(next(t2_ID_tx_wait)) || 
+			fell(next(t2_EX_tx_wait)) || 
+			fell(next(t2_ME_tx_wait)) || 
+			fell(next(t2_WB_tx_wait))
+		);
+
+	// Configure transaction flag variables
+	mg_flag_define(t2_PF_tx_wait, at_t2_PF_tx_exist, v_examination_window, t2_PF_tx_f, t);
+	mg_flag_define(t2_IF_tx_wait, at_t2_IF_tx_exist, v_examination_window, t2_IF_tx_f, t);
+	mg_flag_define(t2_ID_tx_wait, at_t2_ID_tx_exist, v_examination_window, t2_ID_tx_f, t);
+	mg_flag_define(t2_EX_tx_wait, at_t2_EX_tx_exist, v_examination_window, t2_EX_tx_f, t);
+	mg_flag_define(t2_ME_tx_wait, at_t2_ME_tx_exist, v_examination_window, t2_ME_tx_f, t);
+	mg_flag_define(t2_WB_tx_wait, at_t2_WB_tx_exist, v_examination_window, t2_WB_tx_f, t);
+
+    // Configure token counters, note that PF_wcnt is not fixed on purpose since the property goes backwards. Fixing it would cause property to be unreachable
+    at t: IF_wcnt == 0;
+    at t: ID_wcnt == 0;
+	at t: EX_wcnt == 0;
+	at t: ME_wcnt == 0;
+	at t: WB_wcnt == 0;
+
+	during[t,t+v_examination_window]: PF_wcnt_inc == m_PF_rx;
+	during[t,t+v_examination_window]: IF_wcnt_inc == m_IF_rx;
+	during[t,t+v_examination_window]: ID_wcnt_inc == m_ID_rx;
+	during[t,t+v_examination_window]: EX_wcnt_inc == m_EX_rx;
+	during[t,t+v_examination_window]: ME_wcnt_inc == m_ME_rx;
+	during[t,t+v_examination_window]: WB_wcnt_inc == m_WB_rx;
+
+	during[t,t+v_examination_window]: PF_trem == m_PF_tx;
+	during[t,t+v_examination_window]: IF_trem == m_IF_tx;
+	during[t,t+v_examination_window]: ID_trem == m_ID_tx;
+	during[t,t+v_examination_window]: EX_trem == m_EX_tx;
+	during[t,t+v_examination_window]: ME_trem == m_ME_tx;
+	during[t,t+v_examination_window]: WB_trem == m_WB_tx;
+
+	// For debugging
+	during[t,t+v_examination_window]: IN_instr_enum == getInstr(if_parcel);
+	during[t,t+v_examination_window]: PF_instr_enum == getInstr(m_PF_instr);
+	during[t,t+v_examination_window]: IF_instr_enum == getInstr(m_IF_instr);
+	during[t,t+v_examination_window]: ID_instr_enum == getInstr(m_ID_instr);
+	during[t,t+v_examination_window]: EX_instr_enum == getInstr(m_EX_instr);
+	during[t,t+v_examination_window]: ME_instr_enum == getInstr(m_ME_instr);
+	during[t,t+v_examination_window]: WB_instr_enum == getInstr(m_WB_instr);
+
+prove:
+	within[t,t+v_examination_window]: (mg_tn_PF_rx(1) || fell(m_rst));
+
+end property;
