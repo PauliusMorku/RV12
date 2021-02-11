@@ -36,6 +36,8 @@
 import riscv_opcodes_pkg::*;
 import riscv_state_pkg::*;
 
+`define FIXED_VERSION
+
 module riscv_id #(
   parameter            XLEN           = 32,
   parameter [XLEN-1:0] PC_INIT        = 'h200,
@@ -174,10 +176,11 @@ module riscv_id #(
                              illegal_muldiv_instr,
                              illegal_csr_rd,
                              illegal_csr_wr;
-                             
+`ifdef FIXED_VERSION                           
   logic                      id_stall1,
                              id_stall2,
                              id_stall3;
+`endif                       
 
 
   //////////////////////////////////////////////////////////////////
@@ -615,6 +618,7 @@ module riscv_id #(
    * Generate STALL
    */
 //rih: todo
+`ifdef FIXED_VERSION
   always_comb 
   begin
     id_stall1 = 'b0;
@@ -653,26 +657,59 @@ module riscv_id #(
           OPC_SYSTEM  : id_stall2 = (if_src1 == ex_dst);
           default     : id_stall2 = 'b0;          
         endcase;
-/*
-      if (mem_opcode == OPC_LOAD)
-        casex (if_opcode)
-          OPC_OP_IMM  : id_stall3 = (if_src1 == mem_dst);
-          OPC_OP_IMM32: id_stall3 = (if_src1 == mem_dst);
-          OPC_OP      : id_stall3 = (if_src1 == mem_dst) | (if_src2 == mem_dst);
-          OPC_OP32    : id_stall3 = (if_src1 == mem_dst) | (if_src2 == mem_dst);
-          OPC_BRANCH  : id_stall3 = (if_src1 == mem_dst) | (if_src2 == mem_dst);
-          OPC_JALR    : id_stall3 = (if_src1 == mem_dst);
-          OPC_LOAD    : id_stall3 = (if_src1 == mem_dst);
-          OPC_STORE   : id_stall3 = (if_src1 == mem_dst) | (if_src2 == mem_dst);
-          OPC_SYSTEM  : id_stall3 = (if_src1 == mem_dst);
-          default     : id_stall3 = 'b0;          
-        endcase;
-*/      
+ 
     end;
   end;
   
   assign id_stall = id_stall1 | id_stall2 | id_stall3;
-  
+`else
+  always_comb
+    if      (bu_flush || st_flush || du_flush) id_stall = 'b0;        //flush overrules stall
+    else if (stall                           ) id_stall = ~if_bubble; //ignore NOPs e.g. after flush or IF-stall
+    else if (id_opcode == OPC_LOAD && !id_bubble)
+      casex (if_opcode)
+        OPC_OP_IMM  : id_stall = (if_src1 == id_dst);
+        OPC_OP_IMM32: id_stall = (if_src1 == id_dst);
+        OPC_OP      : id_stall = (if_src1 == id_dst) | (if_src2 == id_dst);
+        OPC_OP32    : id_stall = (if_src1 == id_dst) | (if_src2 == id_dst);
+        OPC_BRANCH  : id_stall = (if_src1 == id_dst) | (if_src2 == id_dst);
+        OPC_JALR    : id_stall = (if_src1 == id_dst);
+        OPC_LOAD    : id_stall = (if_src1 == id_dst);
+        OPC_STORE   : id_stall = (if_src1 == id_dst) | (if_src2 == id_dst);
+        OPC_SYSTEM  : id_stall = (if_src1 == id_dst);
+        default     : id_stall = 'b0;
+      endcase
+    else if (ex_opcode == OPC_LOAD && !ex_bubble)
+      casex (if_opcode)
+        OPC_OP_IMM  : id_stall = (if_src1 == ex_dst);
+        OPC_OP_IMM32: id_stall = (if_src1 == ex_dst);
+        OPC_OP      : id_stall = (if_src1 == ex_dst) | (if_src2 == ex_dst);
+        OPC_OP32    : id_stall = (if_src1 == ex_dst) | (if_src2 == ex_dst);
+        OPC_BRANCH  : id_stall = (if_src1 == ex_dst) | (if_src2 == ex_dst);
+        OPC_JALR    : id_stall = (if_src1 == ex_dst);
+        OPC_LOAD    : id_stall = (if_src1 == ex_dst);
+        OPC_STORE   : id_stall = (if_src1 == ex_dst) | (if_src2 == ex_dst);
+        OPC_SYSTEM  : id_stall = (if_src1 == ex_dst);
+        default     : id_stall = 'b0;
+      endcase
+/*
+    else if (mem_opcode == OPC_LOAD)
+      casex (if_opcode)
+        OPC_OP_IMM  : id_stall = (if_src1 == mem_dst);
+        OPC_OP_IMM32: id_stall = (if_src1 == mem_dst);
+        OPC_OP      : id_stall = (if_src1 == mem_dst) | (if_src2 == mem_dst);
+        OPC_OP32    : id_stall = (if_src1 == mem_dst) | (if_src2 == mem_dst);
+        OPC_BRANCH  : id_stall = (if_src1 == mem_dst) | (if_src2 == mem_dst);
+        OPC_JALR    : id_stall = (if_src1 == mem_dst);
+        OPC_LOAD    : id_stall = (if_src1 == mem_dst);
+        OPC_STORE   : id_stall = (if_src1 == mem_dst) | (if_src2 == mem_dst);
+        OPC_SYSTEM  : id_stall = (if_src1 == mem_dst);
+        default     : id_stall = 'b0;
+      endcase
+*/
+   else id_stall = 'b0;  
+`endif
+ 
   /*
    * Generate Illegal Instruction
    */
