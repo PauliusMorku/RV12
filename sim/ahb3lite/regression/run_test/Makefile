@@ -33,7 +33,7 @@
 #####################################################################
 
 
-ROOT_DIR=/home/morkunas/workspace/RV12/
+ROOT_DIR=$(RV12_DIR)
 
 -include $(ROOT_DIR)/sim/ahb3lite/regression/bin/Makefile.include
 
@@ -44,7 +44,7 @@ LOG = log/$(TOP).log
 
 
 SIM_OPTS= -debugdb +notimingchecks +acc
-INIT_FILE="$(TST_SRC_DIR)/rv32ui-p-sb.hex"
+INIT_FILE="$(TST_SRC_DIR)/rv32ui-p-lb.hex"
 DCACHE_SIZE=0
 ICACHE_SIZE=0
 MEM_LATENCY=0
