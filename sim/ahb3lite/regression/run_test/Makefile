@@ -33,7 +33,7 @@
 #####################################################################
 
 
-ROOT_DIR=$(RV12_DIR)
+ROOT_DIR=../../../..
 
 -include $(ROOT_DIR)/sim/ahb3lite/regression/bin/Makefile.include
 
