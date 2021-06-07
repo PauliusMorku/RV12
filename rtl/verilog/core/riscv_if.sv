@@ -106,8 +106,11 @@ module riscv_if #(
 
   logic [XLEN          -1:0] immB,
                              immJ;
-
-
+                             
+  // Added by Paulius as a potential optimization for fetch unit                           
+  logic                      id_stall_prev;
+  logic                      branch_taken_optimized;
+  
   ////////////////////////////////////////////////////////////////
   //
   // Module Body
@@ -117,7 +120,7 @@ module riscv_if #(
   assign flushes = bu_flush | st_flush | du_flush;
 
   //Flush upper layer (memory BIU) 
-  assign if_flush = bu_flush | st_flush | du_flush | branch_taken;
+  assign if_flush = bu_flush | st_flush | du_flush | branch_taken_optimized;
 
   //stall program counter on ID-stall and when instruction-hold register is full
   assign if_stall = id_stall | (&parcel_sr_valid & ~flushes);
@@ -129,7 +132,12 @@ module riscv_if #(
     if (!rstn) parcel_valid <= 1'b0;
     else       parcel_valid <= if_parcel_valid;
 
-
+  // Added by Paulius as a potential optimization for fetch unit
+  always @(posedge clk,negedge rstn)
+      if (!rstn) id_stall_prev <= 'h0;
+      else id_stall_prev <= id_stall;
+  assign branch_taken_optimized = (branch_taken && !id_stall_prev);
+  
   /*
    * Next Program Counter
    */
@@ -140,7 +148,7 @@ module riscv_if #(
 //    else if (!id_stall)
     else
     begin
-        if      ( branch_taken   ) if_nxt_pc <= branch_pc;
+        if      ( branch_taken_optimized ) if_nxt_pc <= branch_pc;
         else if (!if_stall_nxt_pc) if_nxt_pc <= if_nxt_pc +4; //if_stall_nxt_pc
     end
 //    else if (!if_stall_nxt_pc && !id_stall) if_nxt_pc <= if_nxt_pc + 'h4;
@@ -150,7 +158,7 @@ module riscv_if #(
     if      (!rstn                        ) pd_pc <= PC_INIT;
     else if ( st_flush                    ) pd_pc <= st_nxt_pc;
     else if ( bu_flush        ||  du_flush) pd_pc <= bu_nxt_pc;
-    else if ( branch_taken    && !id_stall) pd_pc <= branch_pc;
+    else if ( branch_taken_optimized && !id_stall) pd_pc <= branch_pc;
     else if ( if_parcel_valid && !id_stall) pd_pc <= if_parcel_pc;
 
   always @(posedge clk,negedge rstn)
@@ -169,7 +177,7 @@ module riscv_if #(
     if      (!rstn    ) parcel_shift_register <= {INSTR_NOP,INSTR_NOP};
     else if ( flushes ) parcel_shift_register <= {INSTR_NOP,INSTR_NOP};
     else if (!id_stall)
-      if (branch_taken)
+      if (branch_taken_optimized)
           parcel_shift_register <= {INSTR_NOP,INSTR_NOP};
       else
         case (parcel_sr_valid)
@@ -187,7 +195,7 @@ module riscv_if #(
     if      (!rstn    ) parcel_sr_valid <= 'h0;
     else if ( flushes ) parcel_sr_valid <= 'h0;
     else if (!id_stall)
-      if (branch_taken)
+      if (branch_taken_optimized)
           parcel_sr_valid <= 'h0;
       else
         case (parcel_sr_valid)
@@ -260,7 +268,7 @@ module riscv_if #(
 
   always @(posedge clk,negedge rstn)
     if      (!rstn    ) if_bp_predict <= 2'b00;
-    else if (!id_stall) if_bp_predict <= (HAS_BPU) ? bp_bp_predict : {branch_taken,1'b0};
+    else if (!id_stall) if_bp_predict <= (HAS_BPU) ? bp_bp_predict : {branch_taken_optimized,1'b0};
 
 
 
