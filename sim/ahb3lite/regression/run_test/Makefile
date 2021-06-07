@@ -44,7 +44,7 @@ LOG = log/$(TOP).log
 
 
 SIM_OPTS= -debugdb +notimingchecks +acc
-INIT_FILE="$(TST_SRC_DIR)/rv32ui-p-jal.hex"
+INIT_FILE="$(TST_SRC_DIR)/$(test)"
 DCACHE_SIZE=0
 ICACHE_SIZE=0
 MEM_LATENCY=0
