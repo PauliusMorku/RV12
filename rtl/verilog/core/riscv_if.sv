@@ -268,7 +268,7 @@ module riscv_if #(
 
   always @(posedge clk,negedge rstn)
     if      (!rstn    ) if_bp_predict <= 2'b00;
-    else if (!id_stall) if_bp_predict <= (HAS_BPU) ? bp_bp_predict : {branch_taken_optimized,1'b0};
+    else if (!id_stall) if_bp_predict <= (HAS_BPU) ? bp_bp_predict : {branch_taken,1'b0};
 
 
 
