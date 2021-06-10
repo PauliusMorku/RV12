@@ -30,6 +30,8 @@
 import riscv_opcodes_pkg::*;
 import riscv_state_pkg::*;
 
+`define OPTIMIZED_VERSION
+
 module riscv_if #(
   parameter            XLEN           = 32,
   parameter [XLEN-1:0] PC_INIT        = 'h200,
@@ -136,7 +138,12 @@ module riscv_if #(
   always @(posedge clk,negedge rstn)
       if (!rstn) id_stall_prev <= 'h0;
       else id_stall_prev <= id_stall;
+      
+  `ifdef OPTIMIZED_VERSION
   assign branch_taken_optimized = (branch_taken && !id_stall_prev);
+  `else
+  assign branch_taken_optimized = branch_taken;
+  `endif
   
   /*
    * Next Program Counter
